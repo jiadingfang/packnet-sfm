@@ -123,7 +123,7 @@ ENTRYPOINT ["/tini", "-g", "--"]
 
 # Install DGP (dataset utils)
 WORKDIR /workspace
-RUN git clone https://github.com/TRI-ML/dgp.git \
+RUN git clone https://github.com/ivasiljevic/dgp.git \
     && cd dgp \
     && pip3 install -r requirements.txt
 ENV PYTHONPATH="/workspace/dgp:$PYTHONPATH"

@@ -1,7 +1,7 @@
 arch:
     max_epochs: 50
 model:
-    name: 'GenericSelfSupModel'
+    name: 'IntrinsicSelfSupModel'
     optimizer:
         name: 'Adam'
         depth:
@@ -13,7 +13,7 @@ model:
         step_size: 30
         gamma: 0.5
     depth_net:
-        name: 'RaySurfaceResNet'
+        name: 'IntrinsicsResNet'
         version: '18pt'
     pose_net:
         name: 'PoseResNet'
@@ -24,15 +24,22 @@ model:
         max_depth: 80.0
 datasets:
     augmentation:
-        #image_shape: (384, 384)
         image_shape: (128, 128)
+        #image_shape: (192, 640)
     train:
         batch_size: 1
-        dataset: ['Image']
-        path: ['/mnt/fsx/omnicam']
-        split: ['{:09}']
-        depth_type: ['']
-        repeat: [1]
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
+        depth_type: ['velodyne']
+        repeat: [100]
+
+        #batch_size: 1
+        #dataset: ['Image']
+        #path: ['/mnt/fsx/omnicam']
+        #split: ['{:09}']
+        #depth_type: ['']
+        #repeat: [1]
     validation:
         dataset: ['KITTI']
         path: ['/data/datasets/KITTI_tiny']

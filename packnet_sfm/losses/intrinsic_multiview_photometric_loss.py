@@ -2,52 +2,18 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from matplotlib.cm import get_cmap
 
 from packnet_sfm.utils.image import match_scales
 from packnet_sfm.geometry.camera import Camera
-from packnet_sfm.geometry.camera_generic import GenericCamera
-from packnet_sfm.geometry.camera_utils import view_synthesis_generic
+from packnet_sfm.geometry.camera_utils import view_synthesis
 from packnet_sfm.utils.depth import calc_smoothness, inv2depth
 from packnet_sfm.losses.loss_base import LossBase, ProgressiveScaling
 
 ########################################################################################################################
 
-
-def vis_inverse_depth(inv_depth, normalizer=None, percentile=95,
-                      colormap='plasma', filter_zeros=False):
-    """Visualize inverse depth with provided colormap.
-    Note: Following similar to vid2depth
-    https://github.com/tensorflow/models/blob/1ter/research/vid2depth/inference.py
-    Parameters
-    ----------
-    inv_depth: np.ndarray
-        Inverse depth to be visualized
-    normalizer: float or None
-        Normalize inverse depth by dividing by this factor
-    percentile: float (default: 95)
-        Use this percentile to normalize the inverse depth, if normalizer is
-        not provided.
-    colormap: str (default: plasma)
-        Colormap used for visualizing the inverse depth
-    Returns
-    ----------
-    vis: 3-channel float32 np.ndarray (HW3) with values between (0,1)
-    """
-    # Note: expects (H,W) shape
-    cm = get_cmap(colormap)
-    if normalizer is None:
-        normalizer = np.percentile(
-            inv_depth[inv_depth > 0] if filter_zeros else inv_depth, percentile)
-    inv_depth /= (normalizer + 1e-6)
-    return cm(np.clip(inv_depth, 0., 1.0))[:, :, :3]
-
-
 def SSIM(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
     """
-    Structural SIMlilarity (SSIM) distance between two images.
+    Structural SIMilarity (SSIM) distance between two images.
 
     Parameters
     ----------
@@ -88,8 +54,7 @@ def SSIM(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
 
 ########################################################################################################################
 
-
-class GenericMultiViewPhotometricLoss(LossBase):
+class MultiViewPhotometricLoss(LossBase):
     """
     Self-Supervised multiview photometric loss.
     It takes two images, a depth map and a pose transformation to produce a
@@ -123,8 +88,7 @@ class GenericMultiViewPhotometricLoss(LossBase):
     kwargs : dict
         Extra parameters
     """
-
-    def __init__(self, num_scales=1, ssim_loss_weight=0.85, occ_reg_weight=0.1, smooth_loss_weight=0.1,
+    def __init__(self, num_scales=4, ssim_loss_weight=0.85, occ_reg_weight=0.1, smooth_loss_weight=0.1,
                  C1=1e-4, C2=9e-4, photometric_reduce_op='mean', disp_norm=True, clip_loss=0.5,
                  progressive_scaling=0.0, padding_mode='zeros',
                  automask_loss=False, **kwargs):
@@ -143,9 +107,6 @@ class GenericMultiViewPhotometricLoss(LossBase):
         self.automask_loss = automask_loss
         self.progressive_scaling = ProgressiveScaling(
             progressive_scaling, self.n)
-        self.canonical_ray_surface = torch.tensor(
-            #np.load("kitti_ray_template.npy"))
-            F.interpolate(torch.tensor(np.load("omnicam_ray_template.npy")), (128, 128)))
 
         # Asserts
         if self.automask_loss:
@@ -163,7 +124,7 @@ class GenericMultiViewPhotometricLoss(LossBase):
 
 ########################################################################################################################
 
-    def warp_ref_image(self, inv_depths, ref_image, raysurf_residual, pose, progress):
+    def warp_ref_image(self, inv_depths, ref_image, K, ref_K, pose):
         """
         Warps a reference image to produce a reconstruction of the original one.
 
@@ -188,25 +149,18 @@ class GenericMultiViewPhotometricLoss(LossBase):
         B, _, H, W = ref_image.shape
         device = ref_image.get_device()
         # Generate cameras for all scales
-
-        coeff = np.min([((100.0*progress)**(4/3.) / 100.), 1.])
-        Rmat = self.canonical_ray_surface.to(device) + coeff*raysurf_residual
-        Rmat = Rmat / torch.norm(Rmat, dim=1, keepdim=True)
-
         cams, ref_cams = [], []
         for i in range(self.n):
             _, _, DH, DW = inv_depths[i].shape
             scale_factor = DW / float(W)
-            cams.append(GenericCamera(R=Rmat).to(device))
-            ref_cams.append(GenericCamera(R=Rmat, Tcw=pose).to(device))
-
+            cams.append(Camera(K=K.float()).scaled(scale_factor).to(device))
+            ref_cams.append(Camera(K=ref_K.float(), Tcw=pose).scaled(scale_factor).to(device))
         # View synthesis
         depths = [inv2depth(inv_depths[i]) for i in range(self.n)]
-
         ref_images = match_scales(ref_image, inv_depths, self.n)
-        ref_warped = [view_synthesis_generic(
+        ref_warped = [view_synthesis(
             ref_images[i], depths[i], ref_cams[i], cams[i],
-            padding_mode=self.padding_mode, progress=progress) for i in range(self.n)]
+            padding_mode=self.padding_mode) for i in range(self.n)]
         # Return warped reference image
         return ref_warped
 
@@ -228,8 +182,7 @@ class GenericMultiViewPhotometricLoss(LossBase):
         ssim : torch.Tensor [1]
             SSIM loss
         """
-        ssim_value = SSIM(x, y, C1=self.C1, C2=self.C2,
-                          kernel_size=kernel_size)
+        ssim_value = SSIM(x, y, C1=self.C1, C2=self.C2, kernel_size=kernel_size)
         return torch.clamp((1. - ssim_value) / 2., 0., 1.)
 
     def calc_photometric_loss(self, t_est, images):
@@ -256,16 +209,14 @@ class GenericMultiViewPhotometricLoss(LossBase):
                          for i in range(self.n)]
             # Weighted Sum: alpha * ssim + (1 - alpha) * l1
             photometric_loss = [self.ssim_loss_weight * ssim_loss[i].mean(1, True) +
-                                (1 - self.ssim_loss_weight) *
-                                l1_loss[i].mean(1, True)
+                                (1 - self.ssim_loss_weight) * l1_loss[i].mean(1, True)
                                 for i in range(self.n)]
         else:
             photometric_loss = l1_loss
         # Clip loss
         if self.clip_loss > 0.0:
             for i in range(self.n):
-                mean, std = photometric_loss[i].mean(
-                ), photometric_loss[i].std()
+                mean, std = photometric_loss[i].mean(), photometric_loss[i].std()
                 photometric_loss[i] = torch.clamp(
                     photometric_loss[i], max=float(mean + self.clip_loss * std))
         # Return total photometric loss
@@ -320,8 +271,7 @@ class GenericMultiViewPhotometricLoss(LossBase):
             Smoothness loss
         """
         # Calculate smoothness gradients
-        smoothness_x, smoothness_y = calc_smoothness(
-            inv_depths, images, self.n)
+        smoothness_x, smoothness_y = calc_smoothness(inv_depths, images, self.n)
         # Calculate smoothness loss
         smoothness_loss = sum([(smoothness_x[i].abs().mean() +
                                 smoothness_y[i].abs().mean()) / 2 ** i
@@ -334,8 +284,8 @@ class GenericMultiViewPhotometricLoss(LossBase):
 
 ########################################################################################################################
 
-    def forward(self, image, context, inv_depths, ray_surface,
-                K, ref_K, poses, return_logs, progress):
+    def forward(self, image, context, inv_depths,
+                K, ref_K, poses, return_logs=False, progress=0.0):
         """
         Calculates training photometric loss.
 
@@ -346,8 +296,6 @@ class GenericMultiViewPhotometricLoss(LossBase):
         context : list of torch.Tensor [B,3,H,W]
             Context containing a list of reference images
         inv_depths : list of torch.Tensor [B,1,H,W]
-            Predicted depth maps for the original image, in all scales
-        ray_surface : list of torch.Tensor [B,1,H,W]
             Predicted depth maps for the original image, in all scales
         K : torch.Tensor [B,3,3]
             Original camera intrinsics
@@ -370,11 +318,9 @@ class GenericMultiViewPhotometricLoss(LossBase):
         # Loop over all reference images
         photometric_losses = [[] for _ in range(self.n)]
         images = match_scales(image, inv_depths, self.n)
-
         for j, (ref_image, pose) in enumerate(zip(context, poses)):
             # Calculate warped images
-            ref_warped = self.warp_ref_image(
-                inv_depths, ref_image, ray_surface[('raysurf', 0)], pose, progress=progress)
+            ref_warped = self.warp_ref_image(inv_depths, ref_image, K, ref_K, pose)
             # Calculate and store image loss
             photometric_loss = self.calc_photometric_loss(ref_warped, images)
             for i in range(self.n):
@@ -383,11 +329,9 @@ class GenericMultiViewPhotometricLoss(LossBase):
             if self.automask_loss:
                 # Calculate and store unwarped image loss
                 ref_images = match_scales(ref_image, inv_depths, self.n)
-                unwarped_image_loss = self.calc_photometric_loss(
-                    ref_images, images)
+                unwarped_image_loss = self.calc_photometric_loss(ref_images, images)
                 for i in range(self.n):
                     photometric_losses[i].append(unwarped_image_loss[i])
-
         # Calculate reduced photometric loss
         loss = self.reduce_photometric_loss(photometric_losses)
         # Include smoothness loss if requested
