@@ -13,9 +13,9 @@ from collections import OrderedDict
 from .layers import ConvBlock, Conv3x3, upsample
 
 
-class IntrinsicsDecoder(nn.Module):
+class UCMDecoder(nn.Module):
     def __init__(self, num_ch_enc, scales=[0], num_output_channels=3, use_skips=True):
-        super(IntrinsicsDecoder, self).__init__()
+        super(UCMDecoder, self).__init__()
 
         self.num_output_channels = num_output_channels
         self.use_skips = use_skips
@@ -44,8 +44,8 @@ class IntrinsicsDecoder(nn.Module):
             self.convs[("dispconv", s)] = Conv3x3(self.num_ch_dec[s], self.num_output_channels)
 
         self.convs['conv1'] = ConvBlock(512, 1)
-        self.convs['linear1'] = nn.Linear(int(128 * 128 / 1024), 4)
-        # self.convs['linear1'] = nn.Linear(int(192 * 640 / 1024), 4)
+        self.convs['linear1'] = nn.Linear(int(128 * 128 / 1024), 5)
+        # self.convs['linear1'] = nn.Linear(int(192 * 640 / 1024), 5)
         self.decoder = nn.ModuleList(list(self.convs.values()))
         self.tanh = nn.Tanh()
 
@@ -55,38 +55,29 @@ class IntrinsicsDecoder(nn.Module):
         # get forcal length and offsets
         x = input_features[-1]
         x = self.convs['conv1'](x).squeeze()
-        # print(x.shape)
         x = torch.flatten(x)
-        # print(x.shape)
         x = self.convs['linear1'](x)
-        # print(x.shape)
 
         fx = x[0] * 128
         fy = x[1] * 128
         cx = (x[2] + 0.5) * 128
         cy = (x[3] + 0.5) * 128
+        alpha = x[4].clamp(min=1e-5, max=1-1e-5)
+        I = torch.tensor([fx, fy, cx, cy, alpha])
+
+        # print('fx = {}'.format(fx))
+        # print('fy = {}'.format(fy))
+        # print('cx = {}'.format(cx))
+        # print('cy = {}'.format(cy))
+        # print('alpha = {}'.format(alpha))
 
         # fx = x[0] * 192
         # fy = x[1] * 640
         # cx = (x[2] + 0.5) * 192
         # cy = (x[3] + 0.5) * 640
+        # alpha = x[4].clamp(min=1e-5, max=1-1e-5)
+        # I = torch.tensor([fx, fy, cx, cy, alpha])
 
-        k = torch.eye(3)
-        k[0,0] = x[0]
-        k[1,1] = x[1]
-        k[0,2] = x[2]
-        k[1,2] = x[3]
-        self.output = k
-
-        # # decoder
-        # x = input_features[-1]
-        # #print(x.shape)
-        # x = self.convs['conv1'](x).squeeze()
-        # k = torch.eye(3)
-        # k[0,0] = x[0,0]
-        # k[1,1] = x[1,1]
-        # k[0,2] = x[0,2]
-        # k[1,2] = x[1,2]
-        # self.output = k
+        self.output = I
 
         return self.output

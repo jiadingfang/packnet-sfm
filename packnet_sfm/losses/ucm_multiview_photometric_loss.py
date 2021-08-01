@@ -4,7 +4,8 @@ import torch
 import torch.nn as nn
 
 from packnet_sfm.utils.image import match_scales
-from packnet_sfm.geometry.camera import Camera
+# from packnet_sfm.geometry.camera import Camera
+from packnet_sfm.geometry.camera_ucm import UCMCamera
 from packnet_sfm.geometry.camera_utils import view_synthesis
 from packnet_sfm.utils.depth import calc_smoothness, inv2depth
 from packnet_sfm.losses.loss_base import LossBase, ProgressiveScaling
@@ -54,7 +55,7 @@ def SSIM(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
 
 ########################################################################################################################
 
-class MultiViewPhotometricLoss(LossBase):
+class UCMMultiViewPhotometricLoss(LossBase):
     """
     Self-Supervised multiview photometric loss.
     It takes two images, a depth map and a pose transformation to produce a
@@ -88,7 +89,7 @@ class MultiViewPhotometricLoss(LossBase):
     kwargs : dict
         Extra parameters
     """
-    def __init__(self, num_scales=4, ssim_loss_weight=0.85, occ_reg_weight=0.1, smooth_loss_weight=0.1,
+    def __init__(self, num_scales=1, ssim_loss_weight=0.85, occ_reg_weight=0.1, smooth_loss_weight=0.1,
                  C1=1e-4, C2=9e-4, photometric_reduce_op='mean', disp_norm=True, clip_loss=0.5,
                  progressive_scaling=0.0, padding_mode='zeros',
                  automask_loss=False, **kwargs):
@@ -124,7 +125,7 @@ class MultiViewPhotometricLoss(LossBase):
 
 ########################################################################################################################
 
-    def warp_ref_image(self, inv_depths, ref_image, K, ref_K, pose):
+    def warp_ref_image(self, inv_depths, ref_image, I, ref_I, pose):
         """
         Warps a reference image to produce a reconstruction of the original one.
 
@@ -134,9 +135,9 @@ class MultiViewPhotometricLoss(LossBase):
             Inverse depth map of the original image
         ref_image : torch.Tensor [B,3,H,W]
             Reference RGB image
-        K : torch.Tensor [B,3,3]
+        I : torch.Tensor [B,3,3]
             Original camera intrinsics
-        ref_K : torch.Tensor [B,3,3]
+        ref_I : torch.Tensor [B,3,3]
             Reference camera intrinsics
         pose : Pose
             Original -> Reference camera transformation
@@ -153,8 +154,8 @@ class MultiViewPhotometricLoss(LossBase):
         for i in range(self.n):
             _, _, DH, DW = inv_depths[i].shape
             scale_factor = DW / float(W)
-            cams.append(Camera(K=K.float()).scaled(scale_factor).to(device))
-            ref_cams.append(Camera(K=ref_K.float(), Tcw=pose).scaled(scale_factor).to(device))
+            cams.append(UCMCamera(I=I).to(device))
+            ref_cams.append(UCMCamera(I=ref_I, Tcw=pose).to(device))
         # View synthesis
         depths = [inv2depth(inv_depths[i]) for i in range(self.n)]
         ref_images = match_scales(ref_image, inv_depths, self.n)
@@ -285,7 +286,7 @@ class MultiViewPhotometricLoss(LossBase):
 ########################################################################################################################
 
     def forward(self, image, context, inv_depths,
-                K, ref_K, poses, return_logs=False, progress=0.0):
+                I, ref_I, poses, return_logs=False, progress=0.0):
         """
         Calculates training photometric loss.
 
@@ -297,9 +298,9 @@ class MultiViewPhotometricLoss(LossBase):
             Context containing a list of reference images
         inv_depths : list of torch.Tensor [B,1,H,W]
             Predicted depth maps for the original image, in all scales
-        K : torch.Tensor [B,3,3]
+        I : torch.Tensor [B,3,3]
             Original camera intrinsics
-        ref_K : torch.Tensor [B,3,3]
+        ref_I : torch.Tensor [B,3,3]
             Reference camera intrinsics
         poses : list of Pose
             Camera transformation between original and context
@@ -320,7 +321,7 @@ class MultiViewPhotometricLoss(LossBase):
         images = match_scales(image, inv_depths, self.n)
         for j, (ref_image, pose) in enumerate(zip(context, poses)):
             # Calculate warped images
-            ref_warped = self.warp_ref_image(inv_depths, ref_image, K, ref_K, pose)
+            ref_warped = self.warp_ref_image(inv_depths, ref_image, I, ref_I, pose)
             # Calculate and store image loss
             photometric_loss = self.calc_photometric_loss(ref_warped, images)
             for i in range(self.n):

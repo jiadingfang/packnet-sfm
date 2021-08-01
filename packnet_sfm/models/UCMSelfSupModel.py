@@ -1,11 +1,12 @@
 # Copyright 2020 Toyota Research Institute.  All rights reserved.
 
-from packnet_sfm.models.IntrinsicSfmModel import IntrinsicSfmModel
-from packnet_sfm.losses.multiview_photometric_loss import MultiViewPhotometricLoss
+from packnet_sfm.models.UCMSfmModel import UCMSfmModel
+# from packnet_sfm.losses.multiview_photometric_loss import MultiViewPhotometricLoss
+from packnet_sfm.losses.ucm_multiview_photometric_loss import UCMMultiViewPhotometricLoss
 from packnet_sfm.models.model_utils import merge_outputs
 
 
-class IntrinsicSelfSupModel(IntrinsicSfmModel):
+class UCMSelfSupModel(UCMSfmModel):
     """
     Model that inherits a depth and pose network from SfmModel and
     includes the photometric loss for self-supervised training.
@@ -19,7 +20,7 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         # Initializes SfmModel
         super().__init__(**kwargs)
         # Initializes the photometric loss
-        self._photometric_loss = MultiViewPhotometricLoss(**kwargs)
+        self._photometric_loss = UCMMultiViewPhotometricLoss(**kwargs)
 
     @property
     def logs(self):

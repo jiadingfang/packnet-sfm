@@ -1,6 +1,9 @@
 # Handy commands:
 # - `make docker-build`: builds DOCKERIMAGE (default: `packnet-sfm:latest`)
-PROJECT ?= packnet-sfm
+PROJECT ?= packnet-sfm-ucm-128x128
+# PROJECT ?= packnet-sfm-ucm-162x640
+# PROJECT ?= packnet-sfm-intrinsic-128x128
+# PROJECT ?= packnet-sfm-intrinsic-192x640
 WORKSPACE ?= /workspace/$(PROJECT)
 DOCKER_IMAGE ?= ${PROJECT}:latest
 
@@ -34,6 +37,7 @@ DOCKER_OPTS := \
 			-v /tmp/.X11-unix/X0:/tmp/.X11-unix/X0 \
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v ${PWD}:${WORKSPACE} \
+			-v /scratch/fjd:/data/datasets \
 			-w ${WORKSPACE} \
 			--privileged \
 			--ipc=host \

@@ -1,7 +1,7 @@
 arch:
     max_epochs: 50
 model:
-    name: 'GenericSelfSupModel'
+    name: 'UCMSelfSupModel'
     optimizer:
         name: 'Adam'
         depth:
@@ -13,7 +13,7 @@ model:
         step_size: 30
         gamma: 0.5
     depth_net:
-        name: 'RaySurfaceResNet'
+        name: 'UCMResNet'
         version: '18pt'
     pose_net:
         name: 'PoseResNet'
@@ -29,7 +29,7 @@ datasets:
     train:
         batch_size: 1
         dataset: ['Image']
-        path: ['/data/datasets/omnicam']
+        path: ['/mnt/fsx/omnicam']
         split: ['{:09}']
         depth_type: ['']
         repeat: [1]
