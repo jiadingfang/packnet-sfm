@@ -166,6 +166,12 @@ class Camera(nn.Module):
         B, C, H, W = X.shape
         assert C == 3
 
+        print(X.shape)
+        print(self.K)
+        print(self.K.shape)
+        print(self.Tcw.item())
+        print(self.Tcw.shape)
+
         # Project 3D points onto the camera image plane
         if frame == 'c':
             Xc = self.K.bmm(X.view(B, 3, -1))
@@ -178,8 +184,8 @@ class Camera(nn.Module):
         X = Xc[:, 0]
         Y = Xc[:, 1]
         Z = Xc[:, 2].clamp(min=1e-5)
-        Xnorm = 2 * (X / Z) / (W - 1) - 1.
-        Ynorm = 2 * (Y / Z) / (H - 1) - 1.
+        Xnorm = 2 * (X / Z) / (W) - 1.
+        Ynorm = 2 * (Y / Z) / (H) - 1.
 
         # Clamp out-of-bounds pixels
         # Xmask = ((Xnorm > 1) + (Xnorm < -1)).detach()

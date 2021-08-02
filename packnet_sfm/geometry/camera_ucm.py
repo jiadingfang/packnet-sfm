@@ -100,10 +100,6 @@ class UCMCamera(nn.Module):
 
         # Estimate the outward rays in the camera frame
         fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha
-        assert abs(fx) > 1e-5
-        assert abs(fy) > 1e-5
-        assert abs(alpha) > 1e-5
-        assert abs(1-alpha) > 1e-5
 
         u = grid[:,0,:,:]
         v = grid[:,1,:,:]
@@ -161,11 +157,18 @@ class UCMCamera(nn.Module):
         else:
             raise ValueError('Unknown reference frame {}'.format(frame))
         
-        # TODO: check 3d points for valid projection
-
         d = torch.norm(X, dim=1)
-        x, y, z = X[:,0,:], X[:,1,:], X[:,2,:]
         fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha
+        x, y, z = X[:,0,:], X[:,1,:], X[:,2,:]
+
+        if alpha <= 0.5 and alpha >=0:
+            w = alpha / (1 - alpha)
+        elif alpha > 0.5 and alpha <= 1:
+            w = (1 - alpha) / alpha
+        else:
+            raise ValueError('alpha value {} is out of range [0, 1]'.format(alpha))
+
+        z = torch.where(z > -w * d, z, -w * d + 1e-5) # clip to satisfy the condition for valid 3d points: z > -wd
 
         # print('d = {}'.format(d))
         # print('x = {}'.format(x))
@@ -177,16 +180,39 @@ class UCMCamera(nn.Module):
         # print('cx = {}'.format(cx))
         # print('cy = {}'.format(cy))
         # print('alpha = {}'.format(alpha))
+        
+        # denom = alpha * d + (1 - alpha) * z
+        # print('denom = {}'.format(denom))
+        # print(torch.sum(abs(denom) >= 1e-5))
+        # print((denom).shape)
+        # print(torch.all(abs(denom) >= 1e-5))
+        # print(torch.nonzero(denom < 1e-5))
 
-        assert abs(fx) > 1e-5
-        assert abs(fy) > 1e-5
-        assert abs(alpha) > 1e-5
-        assert abs(1-alpha) > 1e-5
+        # assert abs(fx) >= 1e-5
+        # assert abs(fy) >= 1e-5
+        # assert abs(alpha) >= 1e-5
+        # assert abs(1-alpha) >= 1e-5
+        # assert torch.all(abs(alpha * d + (1 - alpha) * z + 1e-5) >= 1e-5)
+
+        # if abs(fx) < 1e-5:
+        #     print('warning: abs(fx) < 1e-5')
+
+        # if abs(fy) < 1e-5:
+        #     print('warning: abs(fy) < 1e-5')
+
+        # if abs(alpha) < 1e-5:
+        #     print('warning: abs(alpha) < 1e-5')
+
+        # if abs(1 - alpha) < 1e-5:
+        #     print('warning: abs(1-alpha) < 1e-5')
+
+        if torch.all(abs(alpha * d + (1 - alpha) * z) < 1e-3):
+            raise ValueError('torch.all(abs(alpha * d + (1 - alpha) * z) >= 1e-3 failed')
         
         Xnorm = fx * x / (alpha * d + (1 - alpha) * z) + cx
+        Xnorm = 2 * Xnorm / (W) - 1
         Ynorm = fy * y / (alpha * d + (1 - alpha) * z) + cy
-
-        assert abs(alpha * d + (1 - alpha) * z) > 1e-5
+        Ynorm = 2 * Ynorm / (H) - 1
 
         # Clamp out-of-bounds pixels
         # Xmask = ((Xnorm > 1) + (Xnorm < -1)).detach()
