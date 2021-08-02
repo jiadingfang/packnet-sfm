@@ -44,8 +44,11 @@ class IntrinsicsDecoder(nn.Module):
             self.convs[("dispconv", s)] = Conv3x3(self.num_ch_dec[s], self.num_output_channels)
 
         self.convs['conv1'] = ConvBlock(512, 1)
-        self.convs['linear1'] = nn.Linear(int(128 * 128 / 1024), 4)
-        # self.convs['linear1'] = nn.Linear(int(192 * 640 / 1024), 4)
+        # self.convs['linear_focal'] = nn.Linear(int(128 * 128 / 1024), 2)
+        # self.convs['linear_offset'] = nn.Linear(int(128 * 128 / 1024), 2)
+        self.convs['linear_focal'] = nn.Linear(int(192 * 640 / 1024), 2)
+        self.convs['linear_offset'] = nn.Linear(int(192 * 640 / 1024), 2)
+        self.convs['softplus'] = nn.Softplus()
         self.decoder = nn.ModuleList(list(self.convs.values()))
         self.tanh = nn.Tanh()
 
@@ -55,27 +58,31 @@ class IntrinsicsDecoder(nn.Module):
         # get forcal length and offsets
         x = input_features[-1]
         x = self.convs['conv1'](x).squeeze()
-        # print(x.shape)
         x = torch.flatten(x)
-        # print(x.shape)
-        x = self.convs['linear1'](x)
-        # print(x.shape)
 
-        fx = x[0] * 128
-        fy = x[1] * 128
-        cx = (x[2] + 0.5) * 128
-        cy = (x[3] + 0.5) * 128
+        # f = self.convs['linear_focal'](x)
+        # f = self.convs['softplus'](f)
+        # fx = f[0] * 128
+        # fy = f[1] * 128
 
-        # fx = x[0] * 192
-        # fy = x[1] * 640
-        # cx = (x[2] + 0.5) * 192
-        # cy = (x[3] + 0.5) * 640
+        # c = self.convs['linear_offset'](x)
+        # cx = (c[0] + 0.5) * 128
+        # cy = (c[1] + 0.5) * 128
+
+        f = self.convs['linear_focal'](x)
+        f = self.convs['softplus'](f)
+        fx = f[0] * 192
+        fy = f[1] * 640
+
+        c = self.convs['linear_offset'](x)
+        cx = (c[0] + 0.5) * 192
+        cy = (c[1] + 0.5) * 640
 
         k = torch.eye(3)
-        k[0,0] = x[0]
-        k[1,1] = x[1]
-        k[0,2] = x[2]
-        k[1,2] = x[3]
+        k[0,0] = fx
+        k[1,1] = fy
+        k[0,2] = cx
+        k[1,2] = cy
         self.output = k
 
         # # decoder
