@@ -41,7 +41,7 @@ class IntrinsicsResNet(nn.Module):
 
         self.encoder = ResnetEncoder(num_layers=num_layers, pretrained=pretrained)
         self.decoder = DepthDecoder(num_ch_enc=self.encoder.num_ch_enc)
-        self.ray_surf = IntrinsicsDecoder(num_ch_enc=self.encoder.num_ch_enc)
+        self.intrinsic_decoder = IntrinsicsDecoder(num_ch_enc=self.encoder.num_ch_enc)
 
         self.scale_inv_depth = partial(disp_to_depth, min_depth=0.1, max_depth=100.0)
 
@@ -51,7 +51,7 @@ class IntrinsicsResNet(nn.Module):
         (4 scales if training and 1 if not).
         """
         x = self.encoder(rgb)
-        k = self.ray_surf(x)
+        k = self.intrinsic_decoder(x)
         x = self.decoder(x)
         disps = [x[('disp', i)] for i in range(4)]
 

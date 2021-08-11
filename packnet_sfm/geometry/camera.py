@@ -137,6 +137,14 @@ class Camera(nn.Module):
         # Scale rays to metric depth
         Xc = xnorm * depth
 
+        # print('Xc')
+        # print(Xc.shape)
+        # # print(Xc.requires_grad)
+
+        # print('Twc')
+        # print(self.Twc.shape)
+        # print(self.Twc.item())
+
         # If in camera frame of reference
         if frame == 'c':
             return Xc
@@ -166,11 +174,11 @@ class Camera(nn.Module):
         B, C, H, W = X.shape
         assert C == 3
 
-        print(X.shape)
-        print(self.K)
-        print(self.K.shape)
-        print(self.Tcw.item())
-        print(self.Tcw.shape)
+        # print(X.shape)
+        # print(self.K)
+        # print(self.K.shape)
+        # print(self.Tcw.item())
+        # print(self.Tcw.shape)
 
         # Project 3D points onto the camera image plane
         if frame == 'c':
@@ -179,6 +187,10 @@ class Camera(nn.Module):
             Xc = self.K.bmm((self.Tcw @ X).view(B, 3, -1))
         else:
             raise ValueError('Unknown reference frame {}'.format(frame))
+
+
+        # print('Xc')
+        # print(Xc.shape)
 
         # Normalize points
         X = Xc[:, 0]
@@ -192,6 +204,9 @@ class Camera(nn.Module):
         # Xnorm[Xmask] = 2.
         # Ymask = ((Ynorm > 1) + (Ynorm < -1)).detach()
         # Ynorm[Ymask] = 2.
+
+        # print('Xnorm')
+        # print(Xnorm.shape)
 
         # Return pixel coordinates
         return torch.stack([Xnorm, Ynorm], dim=-1).view(B, H, W, 2)

@@ -22,10 +22,11 @@ model:
         crop: 'garg'
         min_depth: 0.0
         max_depth: 80.0
+
 datasets:
     augmentation:
-        image_shape: (128, 128)
-        # image_shape: (192, 640)
+        # image_shape: (128, 128)
+        image_shape: (192, 640)
     train:
         batch_size: 1
         dataset: ['KITTI']
@@ -33,13 +34,6 @@ datasets:
         split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
         repeat: [100]
-
-        #batch_size: 1
-        #dataset: ['Image']
-        #path: ['/mnt/fsx/omnicam']
-        #split: ['{:09}']
-        #depth_type: ['']
-        #repeat: [1]
     validation:
         dataset: ['KITTI']
         path: ['/data/datasets/KITTI_tiny']
@@ -50,3 +44,25 @@ datasets:
         path: ['/data/datasets/KITTI_tiny']
         split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
+
+# datasets:
+#     augmentation:
+#         image_shape: (192, 640)
+#     train:
+#         batch_size: 16
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_zhou_files.txt']
+#         depth_type: ['velodyne']
+#         repeat: [1]
+#     validation:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_val_files.txt',
+#                 'data_splits/eigen_test_files.txt']
+#         depth_type: ['velodyne']
+#     test:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_test_files.txt']
+#         depth_type: ['velodyne']

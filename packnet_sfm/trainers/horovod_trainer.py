@@ -38,9 +38,27 @@ class HorovodTrainer(BaseTrainer):
         print_config(module.config)
 
         # Send module to GPU
-        module = module.to('cuda')
+        module = module.to('cuda:0')
         # Configure optimizer and scheduler
         module.configure_optimizers()
+
+        print('module optimizer')
+        print(module.optimizer)
+
+        # print('module parameters')
+        # counter = 0
+        # for name, parameter in module.named_parameters():
+        #     print(name)
+        #     # print(parameter)
+        #     counter += 1
+
+        # print('counter')
+        # print(counter)
+
+        for name, param in module.named_parameters():
+            print(name)
+            # print(param.requires_grad)
+
 
         # Create distributed optimizer
         compression = hvd.Compression.none
@@ -85,6 +103,18 @@ class HorovodTrainer(BaseTrainer):
             output = module.training_step(batch, i)
             # Backprop through loss and take an optimizer step
             output['loss'].backward()
+
+            # for name, param in module.named_parameters():
+            #     if name == 'model.depth_net.intrinsic_decoder.intrinsic_vector':
+            #         print()
+            #         print('intrinsic vector')
+            #         print('data')
+            #         print(param.data)
+            #         print('grad')
+            #         print(param.grad)
+            #         print('requires grad')
+            #         print(param.requires_grad)
+
             optimizer.step()
             # Append output to list of outputs
             output['loss'] = output['loss'].detach()
@@ -122,7 +152,7 @@ class HorovodTrainer(BaseTrainer):
 
     def test(self, module):
         # Send module to GPU
-        module = module.to('cuda', dtype=self.dtype)
+        module = module.to('cuda:0', dtype=self.dtype)
         # Get test dataloaders
         test_dataloaders = module.test_dataloader()
         # Run evaluation

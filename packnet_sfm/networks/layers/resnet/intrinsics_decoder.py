@@ -25,6 +25,9 @@ class IntrinsicsDecoder(nn.Module):
         self.num_ch_enc = num_ch_enc
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
+        # camera intrinsic parameter as a vector
+        self.intrinsic_vector = nn.Parameter(torch.zeros(4))
+
         # decoder
         self.convs = OrderedDict()
         for i in range(4, -1, -1):
@@ -43,22 +46,29 @@ class IntrinsicsDecoder(nn.Module):
         for s in self.scales:
             self.convs[("dispconv", s)] = Conv3x3(self.num_ch_dec[s], self.num_output_channels)
 
-        self.convs['conv1'] = ConvBlock(512, 1)
-        # self.convs['linear_focal'] = nn.Linear(int(128 * 128 / 1024), 2)
-        # self.convs['linear_offset'] = nn.Linear(int(128 * 128 / 1024), 2)
-        self.convs['linear_focal'] = nn.Linear(int(192 * 640 / 1024), 2)
-        self.convs['linear_offset'] = nn.Linear(int(192 * 640 / 1024), 2)
-        self.convs['softplus'] = nn.Softplus()
-        self.decoder = nn.ModuleList(list(self.convs.values()))
+        # self.convs['conv1'] = ConvBlock(512, 1)
+        # # self.convs['linear_focal'] = nn.Linear(int(128 * 128 / 1024), 2)
+        # # self.convs['linear_offset'] = nn.Linear(int(128 * 128 / 1024), 2)
+        # self.convs['linear_focal'] = nn.Linear(int(192 * 640 * 1 / 1024), 2)
+        # self.convs['linear_offset'] = nn.Linear(int(192 * 640 * 1 / 1024), 2)
+        # # self.convs['activation_focal'] = nn.Softplus()
+        # # self.convs['activation_focal'] = nn.Sigmoid()
+        # self.convs['activation_focal'] = nn.Tanh()
+        # # self.convs['activation_offset'] = nn.Sigmoid()
+        # self.convs['activation_offset'] = nn.Tanh()
+        # self.decoder = nn.ModuleList(list(self.convs.values()))
         self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_features):
         self.output = {}
 
         # get forcal length and offsets
         x = input_features[-1]
-        x = self.convs['conv1'](x).squeeze()
-        x = torch.flatten(x)
+        B = x.shape[0]
+        # x = self.convs['conv1'](x)
+        # B = x.size(0)
+        # x = x.view(B, -1)
 
         # f = self.convs['linear_focal'](x)
         # f = self.convs['softplus'](f)
@@ -69,21 +79,49 @@ class IntrinsicsDecoder(nn.Module):
         # cx = (c[0] + 0.5) * 128
         # cy = (c[1] + 0.5) * 128
 
-        f = self.convs['linear_focal'](x)
-        f = self.convs['softplus'](f)
-        fx = f[0] * 192
-        fy = f[1] * 640
+        # f = self.convs['linear_focal'](x)
+        # f = self.convs['activation_focal'](f)
+        # fx = f[0] * 80 + 370
+        # fy = f[1] * 80 + 370
 
-        c = self.convs['linear_offset'](x)
-        cx = (c[0] + 0.5) * 192
-        cy = (c[1] + 0.5) * 640
+        # # fx = 370
+        # # fy = 370
 
-        k = torch.eye(3)
-        k[0,0] = fx
-        k[1,1] = fy
-        k[0,2] = cx
-        k[1,2] = cy
-        self.output = k
+        # c = self.convs['linear_offset'](x)
+        # c = self.convs['activation_offset'](c)
+        # cx = (c[0]) * 80 + 320
+        # cy = (c[1]) * 80 + 91
+
+        # # cx = 192 / 2
+        # # cy = 640 / 2
+
+
+        # K = torch.eye(3)
+        # batch_K = K.unsqueeze(0).repeat(B,1,1)
+        # K[:,0,0] = fx
+        # K[:,1,1] = fy
+        # K[:,0,2] = cx
+        # K[:,1,2] = cy
+
+        # print()
+        # print('intrinsic vector')
+        # print(self.intrinsic_vecotr.data)
+        # print(self.intrinsic_vecotr.grad)
+
+        fx, fy, cx, cy = self.sigmoid(self.intrinsic_vector) * 1000
+        K = torch.eye(3)
+        K[0,0] = fx
+        K[1,1] = fy
+        K[0,2] = cx
+        K[1,2] = cy
+
+        # fx, fy, cx, cy = self.sigmoid(torch.zeros(4)) * 1000
+        # K = torch.eye(3)
+        # K[0,0] = fx
+        # K[1,1] = fy
+        # K[0,2] = cx
+        # K[1,2] = cy
+        self.output = K.unsqueeze(0).repeat(B,1,1)
 
         # # decoder
         # x = input_features[-1]

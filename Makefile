@@ -1,9 +1,21 @@
 # Handy commands:
 # - `make docker-build`: builds DOCKERIMAGE (default: `packnet-sfm:latest`)
-PROJECT ?= packnet-sfm-ucm-128x128
-# PROJECT ?= packnet-sfm-ucm-162x640
-# PROJECT ?= packnet-sfm-intrinsic-128x128
-# PROJECT ?= packnet-sfm-intrinsic-192x640
+# PROJECT ?= packnet-sfm-ucm-128x128-kitti
+# PROJECT ?= packnet-sfm-ucm-192x640-kitti
+# PROJECT ?= packnet-sfm-intrinsic-128x128-kitti
+# PROJECT ?= packnet-sfm-intrinsic-192x640-kitti
+# PROJECT ?= packnet-sfm-ucm-128x128-omnicam
+# PROJECT ?= packnet-sfm-ucm-384x384-omnicam
+# PROJECT ?= packnet-sfm-ucm-512x512-omnicam
+# PROJECT ?= packnet-sfm-ucm-1024x1024-omnicam
+# PROJECT ?= packnet-sfm-intrinsic-128x128-omnicam
+# PROJECT ?= packnet-sfm-intrinsic-192x640-omnicam
+# PROJECT ?= packnet-infer
+PROJECT ?= packnet-test
+# PROJECT ?= packnet-test1
+# PROJECT ?= packnet-test2
+# PROJECT ?= packnet-test3
+# PROJECT ?= packnet-train
 WORKSPACE ?= /workspace/$(PROJECT)
 DOCKER_IMAGE ?= ${PROJECT}:latest
 

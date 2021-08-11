@@ -29,7 +29,7 @@ datasets:
     train:
         batch_size: 1
         dataset: ['Image']
-        path: ['/mnt/fsx/omnicam']
+        path: ['/data/datasets/omnicam']
         split: ['{:09}']
         depth_type: ['']
         repeat: [1]

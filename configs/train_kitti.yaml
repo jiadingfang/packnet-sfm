@@ -29,7 +29,7 @@ datasets:
         path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_zhou_files.txt']
         depth_type: ['velodyne']
-        repeat: [2]
+        repeat: [1]
     validation:
         dataset: ['KITTI']
         path: ['/data/datasets/KITTI_raw']

@@ -28,7 +28,7 @@ class UCMCamera(nn.Module):
         """
         super().__init__()
         self.I = I
-        self.Tcw = Pose.identity(1) if Tcw is None else Tcw
+        self.Tcw = Pose.identity(len(I)) if Tcw is None else Tcw
 
     def __len__(self):
         """Batch size of the camera intrinsics"""
@@ -45,27 +45,27 @@ class UCMCamera(nn.Module):
     @property
     def fx(self):
         """Focal length in x"""
-        return self.I[:, 0]
+        return self.I[:, 0].unsqueeze(1).unsqueeze(2)
 
     @property
     def fy(self):
         """Focal length in y"""
-        return self.I[:, 1]
+        return self.I[:, 1].unsqueeze(1).unsqueeze(2)
 
     @property
     def cx(self):
         """Principal point in x"""
-        return self.I[:, 2]
+        return self.I[:, 2].unsqueeze(1).unsqueeze(2)
 
     @property
     def cy(self):
         """Principal point in y"""
-        return self.I[:, 3]
+        return self.I[:, 3].unsqueeze(1).unsqueeze(2)
 
     @property
     def alpha(self):
         """alpha in UCM model"""
-        return self.I[:, 4]
+        return self.I[:, 4].unsqueeze(1).unsqueeze(2)
 
     @property
     @lru_cache()
@@ -101,22 +101,98 @@ class UCMCamera(nn.Module):
         # Estimate the outward rays in the camera frame
         fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha
 
+        if torch.any(torch.isnan(alpha)):
+            raise ValueError('alpha is nan')
+
         u = grid[:,0,:,:]
         v = grid[:,1,:,:]
+        
+        # print('u')
+        # print(u.shape)
+        # print('cx')
+        # print(cx.shape)
+        # print('fx')
+        # print(fx.shape)
+        # print('alpha')
+        # print(alpha.shape)
 
         mx = (u - cx) / fx * (1 - alpha)
         my = (v - cy) / fy * (1 - alpha)
         r_square = mx ** 2 + my ** 2
         xi = alpha / (1 - alpha)
+
         coeff = (xi + torch.sqrt(1 + (1 - xi ** 2) * r_square)) / (1 + r_square)
+
+        # print('fx, fy ,cx, cy, alpha')
+        # print(fx, fy, cx, cy, alpha)
+        # print(fx.requires_grad)
+        # print('u')
+        # print(torch.any(torch.isnan(u)))
+        # print(u.requires_grad)
+        # print('v')
+        # print(torch.any(torch.isnan(v)))
+        # print('mx')
+        # print(mx.requires_grad)
+        # print(torch.any(torch.isnan(mx)))
+        # print('my')
+        # print(torch.any(torch.isnan(my)))
+        # print('r_square')
+        # print(r_square.requires_grad)
+        # print(torch.any(torch.isnan(r_square)))
+        # print('xi')
+        # print('xi')
+        # print(xi.requires_grad)
+        # print(torch.any(torch.isnan(xi)))
+        # print('coeff')
+        # print(coeff.requires_grad)
+        # print(torch.any(torch.isnan(coeff)))
         
         x = coeff * mx
         y = coeff * my
         z = coeff * 1 - xi
-        xnorm = torch.stack((x,y,z), dim=1)
+        z = z.clamp(min=1e-5)
+        x_norm = x / z
+        y_norm = y / z
+        z_norm = z / z
+        xnorm = torch.stack(( x_norm, y_norm, z_norm ), dim=1)
+
+        # print('x')
+        # print(torch.any(torch.isnan(x)))
+        # print('y')
+        # print(torch.any(torch.isnan(y)))
+        # print('z')
+        # print(torch.any(torch.isnan(z)))
+        # print('x/z')
+        # print(torch.any(torch.isnan(x/z)))
+        # print('y/z')
+        # print(torch.any(torch.isnan(y/z)))
+        # print('z/z')
+        # print(torch.any(torch.isnan(z/z)))
+        # print('xnorm')
+        # print(torch.any(torch.isnan(xnorm)))
+        # print(x[torch.isnan(z/z)])
+        # print(y[torch.isnan(z/z)])
+        # print(z[torch.isnan(z/z)])
+        # print(x_unnorm[torch.isnan(z/z)])
+        # print(y_unnorm[torch.isnan(z/z)])
+        # print(z_unnorm[torch.isnan(z/z)])
 
         # Scale rays to metric depth
         Xc = xnorm * depth
+
+        # print('xnorm')
+        # print(xnorm.requires_grad)
+
+        # print('depth')
+        # print(depth.requires_grad)
+
+        # print('Xc')
+        # print(Xc.shape)
+        # # print(Xc.requires_grad)
+
+        # print('Twc')
+        # print(self.Twc.shape)
+        # print(self.Twc.item())
 
         # If in camera frame of reference
         if frame == 'c':
@@ -150,75 +226,34 @@ class UCMCamera(nn.Module):
         # Project 3D points onto the camera image plane
         if frame == 'c':
             # Xc = self.K.bmm(X.view(B, 3, -1))
-            X = X.view(B, 3, -1)
+            X = X
         elif frame == 'w':
             # Xc = self.K.bmm((self.Tcw @ X).view(B, 3, -1))
-            X = (self.Tcw @ X).view(B, 3, -1)
+            X = (self.Tcw @ X)
         else:
             raise ValueError('Unknown reference frame {}'.format(frame))
         
         d = torch.norm(X, dim=1)
         fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha
         x, y, z = X[:,0,:], X[:,1,:], X[:,2,:]
+        z = z.clamp(min=1e-5)
 
-        if alpha <= 0.5 and alpha >=0:
-            w = alpha / (1 - alpha)
-        elif alpha > 0.5 and alpha <= 1:
-            w = (1 - alpha) / alpha
-        else:
-            raise ValueError('alpha value {} is out of range [0, 1]'.format(alpha))
-
-        z = torch.where(z > -w * d, z, -w * d + 1e-5) # clip to satisfy the condition for valid 3d points: z > -wd
-
-        # print('d = {}'.format(d))
-        # print('x = {}'.format(x))
-        # print('y = {}'.format(y))
-        # print('z = {}'.format(z))
-
-        # print('fx = {}'.format(fx))
-        # print('fy = {}'.format(fy))
-        # print('cx = {}'.format(cx))
-        # print('cy = {}'.format(cy))
-        # print('alpha = {}'.format(alpha))
-        
-        # denom = alpha * d + (1 - alpha) * z
-        # print('denom = {}'.format(denom))
-        # print(torch.sum(abs(denom) >= 1e-5))
-        # print((denom).shape)
-        # print(torch.all(abs(denom) >= 1e-5))
-        # print(torch.nonzero(denom < 1e-5))
-
-        # assert abs(fx) >= 1e-5
-        # assert abs(fy) >= 1e-5
-        # assert abs(alpha) >= 1e-5
-        # assert abs(1-alpha) >= 1e-5
-        # assert torch.all(abs(alpha * d + (1 - alpha) * z + 1e-5) >= 1e-5)
-
-        # if abs(fx) < 1e-5:
-        #     print('warning: abs(fx) < 1e-5')
-
-        # if abs(fy) < 1e-5:
-        #     print('warning: abs(fy) < 1e-5')
-
-        # if abs(alpha) < 1e-5:
-        #     print('warning: abs(alpha) < 1e-5')
-
-        # if abs(1 - alpha) < 1e-5:
-        #     print('warning: abs(1-alpha) < 1e-5')
-
-        if torch.all(abs(alpha * d + (1 - alpha) * z) < 1e-3):
-            raise ValueError('torch.all(abs(alpha * d + (1 - alpha) * z) >= 1e-3 failed')
+        # print('X')
+        # print(X.shape)
+        # print('d')
+        # print(d.shape)
+        # # print(d.requires_grad)
+        # print('fx')
+        # print(fx.shape)
+        # # print(fx.requires_grad)
+        # print('z')
+        # print(z.shape)
+        # # print(z.requires_grad)
         
         Xnorm = fx * x / (alpha * d + (1 - alpha) * z) + cx
         Xnorm = 2 * Xnorm / (W) - 1
         Ynorm = fy * y / (alpha * d + (1 - alpha) * z) + cy
         Ynorm = 2 * Ynorm / (H) - 1
-
-        # Clamp out-of-bounds pixels
-        # Xmask = ((Xnorm > 1) + (Xnorm < -1)).detach()
-        # Xnorm[Xmask] = 2.
-        # Ymask = ((Ynorm > 1) + (Ynorm < -1)).detach()
-        # Ynorm[Ymask] = 2.
 
         # Return pixel coordinates
         return torch.stack([Xnorm, Ynorm], dim=-1).view(B, H, W, 2)

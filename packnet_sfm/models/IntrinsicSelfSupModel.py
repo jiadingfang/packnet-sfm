@@ -1,5 +1,7 @@
 # Copyright 2020 Toyota Research Institute.  All rights reserved.
 
+import torch
+
 from packnet_sfm.models.IntrinsicSfmModel import IntrinsicSfmModel
 from packnet_sfm.losses.multiview_photometric_loss import MultiViewPhotometricLoss
 from packnet_sfm.models.model_utils import merge_outputs
@@ -20,6 +22,7 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         super().__init__(**kwargs)
         # Initializes the photometric loss
         self._photometric_loss = MultiViewPhotometricLoss(**kwargs)
+        self.counter = 0
 
     @property
     def logs(self):
@@ -81,15 +84,33 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         """
         # Calculate predicted depth and pose output
         output = super().forward(batch, return_logs=return_logs)
+        # B = batch['intrinsics'].shape[0]
+        # batch_K = self.K.unsqueeze(0).repeat(B,1,1)
+
+        if self.counter % 100 == 0:
+            print()
+            print(output['intrinsics'][0])
+            print(batch['intrinsics'][0])
+
+        self.counter += 1
+        # print('step {}'.format(self.counter))
+
         if not self.training:
             # If not training, no need for self-supervised loss
             return output
         else:
             # Otherwise, calculate self-supervised loss
+
             self_sup_output = self.self_supervised_loss(
                 batch['rgb_original'], batch['rgb_context_original'],
-                output['inv_depths'], output['poses'], output['intrinsics'].unsqueeze(0),
+                output['inv_depths'], output['poses'], output['intrinsics'],
                 return_logs=return_logs, progress=progress)
+
+            # self_sup_output = self.self_supervised_loss(
+            #     batch['rgb_original'], batch['rgb_context_original'],
+            #     output['inv_depths'], output['poses'], batch['intrinsics'],
+            #     return_logs=return_logs, progress=progress)
+
             # Return loss and metrics
             return {
                 'loss': self_sup_output['loss'],

@@ -19,7 +19,7 @@ cfg.arch.max_epochs = 50                # Maximum number of epochs
 ### CHECKPOINT
 ########################################################################################################################
 cfg.checkpoint = CN()
-cfg.checkpoint.filepath = ''            # Checkpoint filepath to save data
+cfg.checkpoint.filepath = '/data/datasets/ckpts/'            # Checkpoint filepath to save data
 cfg.checkpoint.save_top_k = 5           # Number of best models to save
 cfg.checkpoint.monitor = 'loss'         # Metric to monitor for logging
 cfg.checkpoint.monitor_index = 0        # Dataset index for the metric to monitor
@@ -63,6 +63,9 @@ cfg.model.optimizer.depth.weight_decay = 0.0    # Dept weight decay
 cfg.model.optimizer.pose = CN()
 cfg.model.optimizer.pose.lr = 0.0002            # Pose learning rate
 cfg.model.optimizer.pose.weight_decay = 0.0     # Pose weight decay
+cfg.model.optimizer.intrinsic = CN()
+cfg.model.optimizer.intrinsic.lr = 0.005            # intrinsic learning rate
+cfg.model.optimizer.intrinsic.weight_decay = 0     # intrinsic weight decay
 ########################################################################################################################
 ### MODEL.SCHEDULER
 ########################################################################################################################

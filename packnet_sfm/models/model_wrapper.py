@@ -131,13 +131,29 @@ class ModelWrapper(torch.nn.Module):
         params = []
         # Load optimizer
         optimizer = getattr(torch.optim, self.config.model.optimizer.name)
+
+        # print()
+        # print('self.config.model.optimizer.depth')
+        # print(self.config.model.optimizer.depth)
+        # print(type(self.config.model.optimizer.depth))
+
         # Depth optimizer
         if self.depth_net is not None:
             params.append({
-                'name': 'Depth',
-                'params': self.depth_net.parameters(),
+                'name': 'Depth Encoder',
+                # 'params': self.depth_net.parameters(),
+                'params': self.depth_net.encoder.parameters(),
                 **filter_args(optimizer, self.config.model.optimizer.depth)
             })
+
+        if self.depth_net is not None:
+            params.append({
+                'name': 'Depth Decoder',
+                # 'params': self.depth_net.parameters(),
+                'params': self.depth_net.decoder.parameters() ,
+                **filter_args(optimizer, self.config.model.optimizer.depth)
+            })
+
         # Pose optimizer
         if self.pose_net is not None:
             params.append({
@@ -145,6 +161,20 @@ class ModelWrapper(torch.nn.Module):
                 'params': self.pose_net.parameters(),
                 **filter_args(optimizer, self.config.model.optimizer.pose)
             })
+
+        # Intrinsic optimizer
+        # print('self.depth_net.intrinsic_decoder.parameters()')
+        # for name, param in self.depth_net.intrinsic_decoder.named_parameters():
+        #     print(name)
+        #     print(param)
+
+        if self.depth_net.intrinsic_decoder is not None:
+            params.append({
+                'name': 'Intrinsic',
+                'params': self.depth_net.intrinsic_decoder.parameters(),
+                **filter_args(optimizer, self.config.model.optimizer.intrinsic)
+            })
+
         # Create optimizer with parameters
         optimizer = optimizer(params)
 

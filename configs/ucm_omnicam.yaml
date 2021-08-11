@@ -24,12 +24,14 @@ model:
         max_depth: 80.0
 datasets:
     augmentation:
-        #image_shape: (384, 384)
-        image_shape: (128, 128)
+        image_shape: (1024, 1024)
+        # image_shape: (512, 512)
+        # image_shape: (384, 384)
+        # image_shape: (128, 128)
     train:
-        batch_size: 1
+        batch_size: 2
         dataset: ['Image']
-        path: ['/mnt/fsx/omnicam']
+        path: ['/data/datasets/omnicam']
         split: ['{:09}']
         depth_type: ['']
         repeat: [1]

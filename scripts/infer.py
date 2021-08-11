@@ -6,7 +6,7 @@ import os
 import torch
 
 from glob import glob
-from cv2 import imwrite
+from cv2 import imwrite, resize
 
 from packnet_sfm.models.model_wrapper import ModelWrapper
 from packnet_sfm.datasets.augmentations import resize_image, to_tensor
@@ -46,7 +46,7 @@ def parse_args():
 
 
 @torch.no_grad()
-def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, half, save):
+def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, mask, half, save):
     """
     Process a single input file to produce and save visualization
 
@@ -79,12 +79,26 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ha
     image = resize_image(image, image_shape)
     image = to_tensor(image).unsqueeze(0)
 
+    # resize mask
+    resized_mask = resize(mask, image_shape)
+    resized_mask = resized_mask.astype(int).astype(float)
+    # resized_mask = mask
+    resized_mask = torch.tensor(resized_mask)
+    resized_mask = resized_mask.unsqueeze(0).unsqueeze(1)
+    print(resized_mask.shape)
+    
     # Send image to GPU if available
     if torch.cuda.is_available():
-        image = image.to('cuda:{}'.format(rank()), dtype=dtype)
+        # image = image.to('cuda:{}'.format(rank()), dtype=dtype)
+        image = image.to('cuda:{}'.format(0), dtype=dtype)
+        resized_mask = resized_mask.to('cuda:{}'.format(0), dtype=dtype)
 
     # Depth inference (returns predicted inverse depth)
     pred_inv_depth = model_wrapper.depth(image)[0]
+    # print(pred_inv_depth.shape)
+
+    # apply mask
+    pred_inv_depth = pred_inv_depth * resized_mask[:,0,:,:]
 
     if save == 'npz' or save == 'png':
         # Get depth from predicted depth map and save to different formats
@@ -133,7 +147,7 @@ def main(args):
 
     # Send model to GPU if available
     if torch.cuda.is_available():
-        model_wrapper = model_wrapper.to('cuda:{}'.format(rank()), dtype=dtype)
+        model_wrapper = model_wrapper.to('cuda:{}'.format(0), dtype=dtype)
 
     # Set to eval mode
     model_wrapper.eval()
@@ -149,10 +163,14 @@ def main(args):
         # Otherwise, use it as is
         files = [args.input]
 
+    # load omnicam mask
+    # mask = np.load('omnicam_mask.npy')
+    mask = np.load('mask_resized.npy')
+    
     # Process each file
     for fn in files[rank()::world_size()]:
         infer_and_save_depth(
-            fn, args.output, model_wrapper, image_shape, args.half, args.save)
+            fn, args.output, model_wrapper, image_shape, mask, args.half, args.save)
 
 
 if __name__ == '__main__':

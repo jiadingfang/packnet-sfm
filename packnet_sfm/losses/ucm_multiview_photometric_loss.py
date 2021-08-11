@@ -324,6 +324,15 @@ class UCMMultiViewPhotometricLoss(LossBase):
             ref_warped = self.warp_ref_image(inv_depths, ref_image, I, ref_I, pose)
             # Calculate and store image loss
             photometric_loss = self.calc_photometric_loss(ref_warped, images)
+
+            # if j == 0:
+            #     print('ref warped')
+            #     print(ref_warped[0])
+            #     print(ref_warped[0].shape)
+            #     print('photometric loss')
+            #     print(photometric_loss[0])
+            #     print(photometric_loss[0].shape)
+
             for i in range(self.n):
                 photometric_losses[i].append(photometric_loss[i])
             # If using automask
