@@ -565,6 +565,13 @@ def setup_dataset(config, mode, requirements, **kwargs):
                 config.path[i], config.split[i],
                 **dataset_args, **dataset_args_i,
             )
+        # EUROC dataset
+        elif config.dataset[i] == 'EUROC':
+            from packnet_sfm.datasets.euroc_dataset import EUROCDataset
+            dataset = EUROCDataset(
+                config.path[i], config.split[i],
+                **dataset_args, **dataset_args_i,
+            )
         else:
             ValueError('Unknown dataset %d' % config.dataset[i])
 
