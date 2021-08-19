@@ -119,9 +119,19 @@ class UCMCamera(nn.Module):
         mx = (u - cx) / fx * (1 - alpha)
         my = (v - cy) / fy * (1 - alpha)
         r_square = mx ** 2 + my ** 2
+
+        # detached_alpha = alpha.detach()
+        # mask = (r_square <= (1 - alpha) ** 2 / (2 * alpha - 1)) | (detached_alpha <= 1/2)
+
+        # print('mask')
+        # print(mask.shape)
+        # print(mask.requires_grad)
+        # print(torch.sum(torch.logical_not(mask)))
+
         xi = alpha / (1 - alpha)
 
         coeff = (xi + torch.sqrt(1 + (1 - xi ** 2) * r_square)) / (1 + r_square)
+        # coeff = torch.where(mask, coeff, 0) # to guarantee coeff calculation is valid, will exclude it in the loss computation
 
         # print('fx, fy ,cx, cy, alpha')
         # print(fx, fy, cx, cy, alpha)

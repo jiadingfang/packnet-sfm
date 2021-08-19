@@ -9,6 +9,7 @@ from packnet_sfm.geometry.camera_ucm import UCMCamera
 from packnet_sfm.geometry.camera_utils import view_synthesis
 from packnet_sfm.utils.depth import calc_smoothness, inv2depth
 from packnet_sfm.losses.loss_base import LossBase, ProgressiveScaling
+from packnet_sfm.utils.image import image_grid
 
 ########################################################################################################################
 
@@ -223,7 +224,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # Return total photometric loss
         return photometric_loss
 
-    def reduce_photometric_loss(self, photometric_losses):
+    def reduce_photometric_loss(self, photometric_losses, mask=None):
         """
         Combine the photometric loss from all context images
 
@@ -232,22 +233,37 @@ class UCMMultiViewPhotometricLoss(LossBase):
         photometric_losses : list of torch.Tensor [B,3,H,W]
             Pixel-wise photometric losses from the entire context
 
+        mask : torch.bool [B,1,H,W]
+            mask for valid pixels in UCM model
+
         Returns
         -------
         photometric_loss : torch.Tensor [1]
             Reduced photometric loss
         """
         # Reduce function
-        def reduce_function(losses):
+        def reduce_function(losses, mask=None):
+            # print(self.photometric_reduce_op)
+            # print('losses')
+            # print(len(losses))
+            # print(losses[0].shape)
+            # print(torch.cat(losses, 1).shape)
+            # print(torch.cat(losses, 1).min(1, True)[0].shape)
             if self.photometric_reduce_op == 'mean':
-                return sum([l.mean() for l in losses]) / len(losses)
+                if mask is None:
+                    return sum([l.mean() for l in losses]) / len(losses)
+                else:
+                    return sum([torch.masked_select(l, mask).mean() for l in losses]) / len(losses)
             elif self.photometric_reduce_op == 'min':
-                return torch.cat(losses, 1).min(1, True)[0].mean()
+                if mask is None:
+                    return torch.cat(losses, 1).min(1, True)[0].mean()
+                else:
+                    return torch.masked_select(torch.cat(losses, 1).min(1, True)[0], mask).mean()
             else:
                 raise NotImplementedError(
                     'Unknown photometric_reduce_op: {}'.format(self.photometric_reduce_op))
         # Reduce photometric loss
-        photometric_loss = sum([reduce_function(photometric_losses[i])
+        photometric_loss = sum([reduce_function(photometric_losses[i], mask=mask)
                                 for i in range(self.n)]) / self.n
         # Store and return reduced photometric loss
         self.add_metric('photometric_loss', photometric_loss)
@@ -282,6 +298,51 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # Store and return smoothness loss
         self.add_metric('smoothness_loss', smoothness_loss)
         return smoothness_loss
+
+########################################################################################################################
+
+    def calc_pixel_mask(self, image, I):
+        """
+        Calculates mask for valid pixels in UCM model according equation (15) in the double sphere paper
+
+        Parameters
+        ----------
+        image : torch.Tensor [B,3,H,W]
+            Original image
+        I : torch.Tensor [B,3,3]
+            Camera intrinsics
+
+        Returns
+        -------
+        mask : torch.bool [B,1,H,W]
+            mask of the batch images
+        """
+        B, C, H, W = image.shape
+
+        grid = image_grid(B, H, W, image.dtype, 'cpu', normalized=False)  # [B,1,H,W]
+
+        fx = I[:, 0].unsqueeze(1).unsqueeze(2)
+        fy = I[:, 1].unsqueeze(1).unsqueeze(2)
+        cx = I[:, 2].unsqueeze(1).unsqueeze(2)
+        cy = I[:, 3].unsqueeze(1).unsqueeze(2)
+        alpha = I[:, 4].unsqueeze(1).unsqueeze(2)
+
+        u = grid[:,0,:,:]
+        v = grid[:,1,:,:]
+
+        mx = (u - cx) / fx * (1 - alpha)
+        my = (v - cy) / fy * (1 - alpha)
+        r_square = mx ** 2 + my ** 2
+
+        mask = (r_square <= (1 - alpha) ** 2 / (2 * alpha - 1)) | (alpha <= 1/2)
+        mask = mask.detach().unsqueeze(1)
+
+        # print('mask')
+        # print(mask.shape)
+        # print(mask.dtype)
+        # print(torch.sum(torch.logical_not(mask)))
+
+        return mask
 
 ########################################################################################################################
 
@@ -342,8 +403,12 @@ class UCMMultiViewPhotometricLoss(LossBase):
                 unwarped_image_loss = self.calc_photometric_loss(ref_images, images)
                 for i in range(self.n):
                     photometric_losses[i].append(unwarped_image_loss[i])
+
+        # Calculatet pixel mask
+        mask = self.calc_pixel_mask(image, I).to(image.device)
+
         # Calculate reduced photometric loss
-        loss = self.reduce_photometric_loss(photometric_losses)
+        loss = self.reduce_photometric_loss(photometric_losses, mask)
         # Include smoothness loss if requested
         if self.smooth_loss_weight > 0.0:
             loss += self.calc_smoothness_loss(inv_depths, images)
