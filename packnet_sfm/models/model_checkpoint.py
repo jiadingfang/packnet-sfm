@@ -120,6 +120,7 @@ class ModelCheckpoint:
     def check_and_save(self, model, metrics):
         # Check saving interval
         epoch = model.current_epoch
+
         if self.epoch_last_check is not None and \
                 (epoch - self.epoch_last_check) < self.period:
             return
@@ -127,6 +128,7 @@ class ModelCheckpoint:
         # Prepare filepath
         filepath = self.format_checkpoint_name(epoch, metrics)
         while os.path.isfile(filepath):
+            raise ValueError('filepath {} already existed'.format(filepath))
             filepath = self.format_checkpoint_name(epoch, metrics)
         # Check if saving or not
         # if self.save_top_k != -1:
