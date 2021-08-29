@@ -3,6 +3,7 @@ import re
 from collections import defaultdict
 import os
 
+from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 from packnet_sfm.utils.image import load_image
@@ -30,8 +31,8 @@ class EUROCDataset(Dataset):
                  depth_type=None, **kwargs):
         super().__init__()
         # Asserts
-        assert depth_type is None or depth_type == '', \
-            'ImageDataset currently does not support depth types'
+        # assert depth_type is None or depth_type == '', \
+        #     'ImageDataset currently does not support depth types'
         assert len(strides) == 1 and strides[0] == 1, \
             'ImageDataset currently only supports stride of 1.'
 
@@ -46,6 +47,9 @@ class EUROCDataset(Dataset):
         self.files = []
         self.file_tree = defaultdict(list)
         self.read_files(root_dir)
+
+        self.depth_type = depth_type
+        self.with_depth = depth_type is not '' and depth_type is not None
 
         # print('file tree')
         # print(self.file_tree)
@@ -124,10 +128,16 @@ class EUROCDataset(Dataset):
         # print(context_paths)
         # print([os.path.isfile(os.path.join(self.root_dir, session, filename)) for filename in context_paths])
 
-        return [load_image(os.path.join(self.root_dir, session, filename))
-                for filename in context_paths]
+        return [self._read_rgb_file(session, filename) for filename in context_paths]
+        # return [load_image(os.path.join(self.root_dir, session, filename))
+        #         for filename in context_paths]
 
     def _read_rgb_file(self, session, filename):
+
+        gray_image = load_image(os.path.join(self.root_dir, session, filename))
+        gray_image_np = np.array(gray_image)
+        rgb_image_np = np.stack([gray_image_np for _ in range(3)], axis=2)
+        rgb_image = Image.fromarray(rgb_image_np)
 
         # print('root dir')
         # print(self.root_dir)
@@ -137,8 +147,34 @@ class EUROCDataset(Dataset):
         # print(filename)
         # print('path')
         # print(os.path.join(self.root_dir, session, filename))
+        # print('gray_image')
+        # print(type(gray_image))
+        # print(gray_image_np.shape)
+        # print(np.max(gray_image_np))
+        # print('rgb image')
+        # print(rgb_image_np.shape)
 
-        return load_image(os.path.join(self.root_dir, session, filename))
+        # return load_image(os.path.join(self.root_dir, session, filename))
+        return rgb_image
+
+    def _read_npy_depth(self, session, depth_filename):
+        depth_file_path = os.path.join(self.root_dir, session, '../../depth_maps', depth_filename)
+        return np.load(depth_file_path)
+
+    def _read_depth(self, session, depth_filename):
+        """Get the depth map from a file."""
+        if self.depth_type in ['vicon']:
+            return self._read_npy_depth(session, depth_filename)
+        else:
+            raise NotImplementedError(
+                'Depth type {} not implemented'.format(self.depth_type))
+
+    def _has_depth(self, session, depth_filename):
+        depth_file_path = os.path.join(self.root_dir, session, '../../depth_maps', depth_filename)
+        # print('depth_file_path')
+        # print(depth_file_path)
+        # print(os.path.isfile(depth_file_path))
+        return os.path.isfile(depth_file_path)
 
     def __getitem__(self, idx):
         session, filename = self.files[idx]
@@ -148,12 +184,20 @@ class EUROCDataset(Dataset):
             'idx': idx,
             'filename': '%s_%s' % (session, os.path.splitext(filename)[0]),
             'rgb': image,
-            'intrinsics': dummy_calibration(image)
+            'intrinsics': dummy_calibration(image),
+            'intrinsic_type': 'euroc'
         }
 
         if self.has_context:
             sample['rgb_context'] = \
                 self._read_rgb_context_files(session, filename)
+
+        depth_filename = filename.split('.')[0] + 'depth.npy'
+        if self.with_depth:
+            if self._has_depth(session, depth_filename):
+                sample['depth'] = self._read_depth(session, depth_filename)
+                # print('depth')
+                # print(sample['depth'].shape)
 
         if self.data_transform:
             sample = self.data_transform(sample)

@@ -100,7 +100,8 @@ class ImageDataset(Dataset):
             'filename': '%s_%s' % (session, os.path.splitext(filename)[0]),
             #
             'rgb': image,
-            'intrinsics': dummy_calibration(image)
+            'intrinsics': dummy_calibration(image),
+            'intrinsic_type': 'omnicam'
         }
 
         if self.has_context:

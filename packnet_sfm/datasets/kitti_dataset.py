@@ -399,6 +399,9 @@ class KITTIDataset(Dataset):
                     'pose_context': image_context_pose
                 })
 
+        # add intrinsic type
+        sample.update({'intrinsic_type': 'kitti'})
+
         # Apply transformations
         if self.data_transform:
             sample = self.data_transform(sample)

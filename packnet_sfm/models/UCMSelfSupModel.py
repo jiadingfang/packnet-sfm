@@ -5,6 +5,7 @@ from packnet_sfm.models.UCMSfmModel import UCMSfmModel
 from packnet_sfm.losses.ucm_multiview_photometric_loss import UCMMultiViewPhotometricLoss
 from packnet_sfm.models.model_utils import merge_outputs
 
+import torch
 import numpy as np
 from PIL import Image
 
@@ -22,6 +23,7 @@ class UCMSelfSupModel(UCMSfmModel):
         # Initializes SfmModel
         super().__init__(**kwargs)
         self.counter = 0
+        self.I_dict = {}
         # Initializes the photometric loss
         self._photometric_loss = UCMMultiViewPhotometricLoss(**kwargs)
 
@@ -30,8 +32,9 @@ class UCMSelfSupModel(UCMSfmModel):
         """Return logs."""
         return {
             **super().logs,
-            **self._photometric_loss.logs
-        }
+            **self._photometric_loss.logs,
+            **self.I_dict
+        }   
 
     def self_supervised_loss(self, image, ref_images, inv_depths, poses,
                              intrinsics, return_logs=False, progress=0.0):
@@ -85,66 +88,50 @@ class UCMSelfSupModel(UCMSfmModel):
         """
         # Calculate predicted depth and pose output
         output = super().forward(batch, return_logs=return_logs)
-        # exp_name = 'omnicam_128x128'
-        # exp_name = 'omnicam_384x384'
-        # print()
+
+        I = output['intrinsics'][0,:]
+        self.I_dict = {'fx': I[0].item(), 'fy': I[1].item(), 'cx': I[2].item(), 'cy': I[3].item(), 'alpha': I[4].item()}
+        batch_I = output['intrinsics']
+
+        # I_0 = output['intrinsics'][0,0,:]
+        # I_1 = output['intrinsics'][0,1,:]
+        # self.I_dict = {'fx_0': I_0[0].item(), 'fy_0': I_0[1].item(), 'cx_0': I_0[2].item(), 'cy_0': I_0[3].item(), 'alpha_0': I_0[4].item(),
+        #                 'fx_1': I_1[0].item(), 'fy_1': I_1[1].item(), 'cx_1': I_1[2].item(), 'cy_1': I_1[3].item(), 'alpha_1': I_1[4].item()}
         
+        # print('batch intrinsic types')
+        # print(batch['intrinsic_type'])
+        # print(batch.keys())
+
+        # B = len(batch['idx'])
+        # batch_I = torch.zeros((B,5))
+        # for i in range(B):
+        #     if batch['intrinsic_type'][i] == 'euroc':
+        #         batch_I[i, :] = I_0
+        #     elif batch['intrinsic_type'][i] == 'omnicam':
+        #         batch_I[i, :] = I_1
+        #     else:
+        #         raise ValueError('only implement for euroc and omnicam')
+
+        # B = len(batch['idx'])
+        # batch_I = torch.zeros((B,5))
+        # for i in range(B):
+        #     if batch['intrinsic_type'][i] == 'euroc':
+        #         batch_I[i, :] = I_0
+        #     elif batch['intrinsic_type'][i] == 'kitti':
+        #         batch_I[i, :] = I_1
+        #     else:
+        #         raise ValueError('only implement for euroc and kitti')
+        
+        # print('batch_I')
+        # print(batch_I)
+
         if self.counter % 100 == 0:
             print()
-            print(output['intrinsics'][0])
-            # print(batch['intrinsics'][0])
-            # inv_depths = output['inv_depths']
-            # print(output['intrinsics'])
-            # print('saving inv_depths')
-            # # print(len(inv_depths))
-            # # print(inv_depths)
-            # # print(inv_depths[0].shape)
-
-            # img_save_path_0 = 'results/depths_{}/png/{}_0.png'.format(exp_name, self.counter)
-            # img_save_path_1 = 'results/depths_{}/png/{}_1.png'.format(exp_name, self.counter)
-            # img_save_path_2 = 'results/depths_{}/png/{}_2.png'.format(exp_name, self.counter)
-            # img_save_path_3 = 'results/depths_{}/png/{}_3.png'.format(exp_name, self.counter)
-
-            # inv_depth_0_copy = inv_depths[0].clone()
-            # raw_inv_depth_0 = inv_depth_0_copy.detach().cpu().numpy()[0][0]
-            # inv_depth_0 = (raw_inv_depth_0 - np.min(raw_inv_depth_0)) / np.max(raw_inv_depth_0) * 255
-            # inv_depth_0 = inv_depth_0.astype(np.uint8)
-
-            # inv_depth_1_copy = inv_depths[1].clone()
-            # raw_inv_depth_1 = inv_depth_1_copy.detach().cpu().numpy()[0][0]
-            # inv_depth_1 = (raw_inv_depth_1 - np.min(raw_inv_depth_1)) / np.max(raw_inv_depth_1) * 255
-            # inv_depth_1 = inv_depth_1.astype(np.uint8)
-
-            # inv_depth_2_copy = inv_depths[2].clone()
-            # raw_inv_depth_2 = inv_depth_2_copy.detach().cpu().numpy()[0][0]
-            # inv_depth_2 = (raw_inv_depth_2 - np.min(raw_inv_depth_2)) / np.max(raw_inv_depth_2) * 255
-            # inv_depth_2 = inv_depth_2.astype(np.uint8)
-
-            # inv_depth_3_copy = inv_depths[3].clone()
-            # raw_inv_depth_3 = inv_depth_3_copy.detach().cpu().numpy()[0][0]
-            # inv_depth_3 = (raw_inv_depth_3 - np.min(raw_inv_depth_3)) / np.max(raw_inv_depth_3) * 255
-            # inv_depth_3 = inv_depth_3.astype(np.uint8)
-
-            # im_0 = Image.fromarray(inv_depth_0)
-            # im_1 = Image.fromarray(inv_depth_1)
-            # im_2 = Image.fromarray(inv_depth_2)
-            # im_3 = Image.fromarray(inv_depth_3)
-
-            # im_0.save(img_save_path_0)
-            # im_1.save(img_save_path_1)
-            # im_2.save(img_save_path_2)
-            # im_3.save(img_save_path_3)
-
-            # npz_save_path_0 = 'results/depths_{}/npz/{}_0'.format(exp_name, self.counter)
-            # npz_save_path_1 = 'results/depths_{}/npz/{}_1'.format(exp_name, self.counter)
-            # npz_save_path_2 = 'results/depths_{}/npz/{}_2'.format(exp_name, self.counter)
-            # npz_save_path_3 = 'results/depths_{}/npz/{}_3'.format(exp_name, self.counter)
-
-            # np.save(npz_save_path_0, raw_inv_depth_0)
-            # np.save(npz_save_path_1, raw_inv_depth_1)
-            # np.save(npz_save_path_2, raw_inv_depth_2)
-            # np.save(npz_save_path_3, raw_inv_depth_3)
-
+            print(I)
+            # print(batch['intrinsic_type'])
+            # print(I_0)
+            # print(I_1)
+            # print(batch_I)
         self.counter += 1
 
         if not self.training:
@@ -154,7 +141,7 @@ class UCMSelfSupModel(UCMSfmModel):
             # Otherwise, calculate self-supervised loss
             self_sup_output = self.self_supervised_loss(
                 batch['rgb_original'], batch['rgb_context_original'],
-                output['inv_depths'], output['poses'], output['intrinsics'],
+                output['inv_depths'], output['poses'], batch_I,
                 return_logs=return_logs, progress=progress)
 
             # print(output)

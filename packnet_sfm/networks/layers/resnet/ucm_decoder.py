@@ -26,8 +26,20 @@ class UCMDecoder(nn.Module):
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
         # camera intrinsic parameter as a vector
+        i = torch.tensor([235.4/1000, 245.1/1000, 186.5/1000, 132.6/1000, 0.65])
+        # i = i * 0.9
+        # i = i * 0.95
+        # i = i * 1.05
+        i = i * 1.10
+        sigmoid_inv_i = torch.log(i / (1 - i))
+        self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
         # self.intrinsic_vector = nn.Parameter(torch.zeros(5))
-        self.intrinsic_vector = nn.Parameter(-torch.ones(5))
+        # self.intrinsic_vector = nn.Parameter(-torch.ones(5))
+        # self.intrinsic_vector = nn.Parameter(-torch.ones(5) * 2)
+        # self.intrinsic_vector = nn.Parameter(torch.tensor([-1.0, -1.0, -1.0, -2.0, -1.0]))
+        # self.intrinsic_vector = nn.Parameter(torch.tensor([[-1.0, -1.0, -1.0, -2.0, -1.0],
+        #                                                     [-1.0, -1.0, -1.0, -2.0, -1.0]]))
+
 
         # decoder
         self.convs = OrderedDict()
@@ -72,47 +84,10 @@ class UCMDecoder(nn.Module):
         # get forcal length and offsets
         x = input_features[-1]
         B = x.shape[0]
-        # x = self.convs['conv1'](x).squeeze()
-        # x = torch.flatten(x)
-
-        # f = self.convs['linear_focal'](x)
-        # f = self.convs['softplus'](f)
-        # fx = f[0] * 128
-        # fy = f[1] * 128
-
-        # c = self.convs['linear_offset'](x)
-        # cx = (c[0] + 0.5) * 128
-        # cy = (c[1] + 0.5) * 128
-
-        # f = self.convs['linear_focal'](x)
-        # f = self.convs['activation_focal'](f)
-        # fx = f[0] * 80 + 370
-        # fy = f[1] * 80 + 370
-
-        # c = self.convs['linear_offset'](x)
-        # c = self.convs['activation_offset'](c)
-        # cx = (c[0]) * 80 + 320
-        # cy = (c[1]) * 80 + 91
-
-        # f = self.convs['linear_focal'](x)
-        # f = self.convs['softplus'](f)
-        # fx = f[0] * 384
-        # fy = f[1] * 384
-
-        # c = self.convs['linear_offset'](x)
-        # cx = (c[0] + 0.5) * 384
-        # cy = (c[1] + 0.5) * 384
-
-        # alpha = self.convs['linear_alpha'](x)
-        # alpha = 1.0 / 2 * self.convs['activation_alpha'](alpha)
-
-        # fx = 128 / 2
-        # fy = 128 / 2
-        # cx = 128 / 2
-        # cy = 128 / 2
         
+        # single dataset tensor
         fx, fy, cx, cy = self.sigmoid(self.intrinsic_vector[0:4]) * 1000
-        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1 / 2
+        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1.0
 
         I = torch.zeros(5)
         I[0] = fx
@@ -120,24 +95,33 @@ class UCMDecoder(nn.Module):
         I[2] = cx
         I[3] = cy
         I[4] = alpha
-        # I = torch.tensor([fx, fy, cx, cy, alpha])
-        # I = torch.tensor([fx, fy, cx, cy, alpha], requires_grad=True)
-        # print()
-        # print('I')
-        # print(I)
-        # print(I.requires_grad)
-
-        # print()
-        # print('I shape')
-        # print(I.shape)
-        # print('fx = {}'.format(fx))
-        # print('fy = {}'.format(fy))
-        # print('cx = {}'.format(cx))
-        # print('cy = {}'.format(cy))
-        # print('alpha = {}'.format(alpha))
+        # I[0] = 235.36
+        # I[1] = 245.12
+        # I[2] = 186.45
+        # I[3] = 132.63
+        # I[4] = 0.65
 
         self.output = I.unsqueeze(0).repeat(B,1)
-        # print('output shape')
-        # print(self.output.shape)
+
+        ## double dataset tensor
+        # fx_0, fy_0, cx_0, cy_0 = self.sigmoid(self.intrinsic_vector[0, 0:4]) * 1000
+        # alpha_0 = self.sigmoid(self.intrinsic_vector[0, 4]) * 1.0
+
+        # fx_1, fy_1, cx_1, cy_1 = self.sigmoid(self.intrinsic_vector[1, 0:4]) * 1000
+        # alpha_1 = self.sigmoid(self.intrinsic_vector[1, 4]) * 1.0
+
+        # I = torch.zeros((2,5))
+        # I[0,0] = fx_0
+        # I[0,1] = fy_0
+        # I[0,2] = cx_0
+        # I[0,3] = cy_0
+        # I[0,4] = alpha_0
+        # I[1,0] = fx_1
+        # I[1,1] = fy_1
+        # I[1,2] = cx_1
+        # I[1,3] = cy_1
+        # I[1,4] = alpha_1
+
+        # self.output = I.unsqueeze(0).repeat(B,1,1)
 
         return self.output

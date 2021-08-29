@@ -262,9 +262,17 @@ class ModelWrapper(torch.nn.Module):
     def validation_epoch_end(self, output_data_batch):
         """Finishes a validation epoch."""
 
+        # print('Enter validation epoch end')
+        # print('data to make metric data')
+        # print(output_data_batch)
+        # print(self.metrics_name)
+
         # Reduce depth metrics
         metrics_data = all_reduce_metrics(
             output_data_batch, self.validation_dataset, self.metrics_name)
+
+        # print('metric data')
+        # print(not metrics_data[0])
 
         # Create depth dictionary
         metrics_dict = create_dict(
@@ -519,6 +527,10 @@ def setup_dataset(config, mode, requirements, **kwargs):
     dataset : Dataset
         Dataset class for that mode
     """
+
+    # print('config')
+    # print(config)
+
     # If no dataset is given, return None
     if len(config.path) == 0:
         return None
@@ -527,8 +539,6 @@ def setup_dataset(config, mode, requirements, **kwargs):
 
     # Global shared dataset arguments
     dataset_args = {
-        'back_context': config.back_context,
-        'forward_context': config.forward_context,
         'data_transform': get_transforms(mode, **kwargs)
     }
 
@@ -539,6 +549,8 @@ def setup_dataset(config, mode, requirements, **kwargs):
 
         # Individual shared dataset arguments
         dataset_args_i = {
+            'back_context': config.back_context[i],
+            'forward_context': config.forward_context[i],
             'depth_type': config.depth_type[i] if requirements['gt_depth'] else None,
             'with_pose': requirements['gt_pose'],
         }

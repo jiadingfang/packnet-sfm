@@ -26,8 +26,12 @@ class EUCMDecoder(nn.Module):
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
         # camera intrinsic parameter as a vector
+        i = torch.tensor([235.64381137951174 / 1000, 245.38803860055288 / 1000, 186.44431894063212 / 1000, 132.64829510142745 / 1000, 0.5966287792627975 / 1, 1.1122253956511319 / 2])
+        # i = i * 1.10
+        sigmoid_inv_i = torch.log(i / (1 - i))
+        self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
         # self.intrinsic_vector = nn.Parameter(torch.zeros(6))
-        self.intrinsic_vector = nn.Parameter(-torch.ones(6))
+        # self.intrinsic_vector = nn.Parameter(-torch.ones(6))
 
         # decoder
         self.convs = OrderedDict()
@@ -74,7 +78,7 @@ class EUCMDecoder(nn.Module):
         B = x.shape[0]
         
         fx, fy, cx, cy = self.sigmoid(self.intrinsic_vector[0:4]) * 1000
-        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1 / 2
+        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1
         # alpha = 0
         beta = self.sigmoid(self.intrinsic_vector[5]) * 2
         # beta = 1
@@ -85,7 +89,7 @@ class EUCMDecoder(nn.Module):
         I[2] = cx
         I[3] = cy
         I[4] = alpha
-        I[5] = beta
+        I[5] = 1
 
         self.output = I.unsqueeze(0).repeat(B,1)
 
