@@ -121,8 +121,8 @@ class EUCMCamera(nn.Module):
         # print('alpha')
         # print(alpha.shape)
 
-        mx = (u - cx) / fx * (1 - alpha)
-        my = (v - cy) / fy * (1 - alpha)
+        mx = (u - cx) / fx
+        my = (v - cy) / fy
         r_square = mx ** 2 + my ** 2
         mz = (1 - beta * alpha ** 2 * r_square) / (alpha * torch.sqrt(1 - (2 * alpha - 1) * beta * r_square) + (1 - alpha))
         # xi = alpha / (1 - alpha)
