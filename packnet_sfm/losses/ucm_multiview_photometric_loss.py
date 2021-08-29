@@ -309,7 +309,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
         ----------
         image : torch.Tensor [B,3,H,W]
             Original image
-        I : torch.Tensor [B,3,3]
+        I : torch.Tensor [B, 5]
             Camera intrinsics
 
         Returns
