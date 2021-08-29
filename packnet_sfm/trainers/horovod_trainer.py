@@ -38,12 +38,12 @@ class HorovodTrainer(BaseTrainer):
         print_config(module.config)
 
         # Send module to GPU
-        module = module.to('cuda:0')
+        module = module.to('cuda:{}'.format(int(module.config.gpu.idx)))
         # Configure optimizer and scheduler
         module.configure_optimizers()
 
-        print('module optimizer')
-        print(module.optimizer)
+        # print('module optimizer')
+        # print(module.optimizer)
 
         # print('module parameters')
         # counter = 0
@@ -52,12 +52,13 @@ class HorovodTrainer(BaseTrainer):
         #     # print(parameter)
         #     counter += 1
 
-        # print('counter')
-        # print(counter)
+        # for name, param in module.named_parameters():
+        #     if param.requires_grad and 'intrinsic_vector' in name:
+        #         param.requires_grad = False
 
-        for name, param in module.named_parameters():
-            print(name)
-            # print(param.requires_grad)
+        # for name, param in module.named_parameters():
+        #     print(name)
+        #     print(param.requires_grad)
 
 
         # Create distributed optimizer
@@ -72,6 +73,17 @@ class HorovodTrainer(BaseTrainer):
 
         # Epoch loop
         for epoch in range(module.current_epoch, self.max_epochs):
+            
+            # Free intrinsic vector in first 10 epochs
+            if epoch < 10:
+                for name, param in module.named_parameters():
+                    if param.requires_grad and 'intrinsic_vector' in name:
+                        param.requires_grad = False
+            else:
+                for name, param in module.named_parameters():
+                    if not param.requires_grad and 'intrinsic_vector' in name:
+                        param.requires_grad = True
+
             # Train
             self.train(train_dataloader, module, optimizer)
             # Validation
@@ -99,7 +111,14 @@ class HorovodTrainer(BaseTrainer):
             # Reset optimizer
             optimizer.zero_grad()
             # Send samples to GPU and take a training step
-            batch = sample_to_cuda(batch)
+            # print('config')
+            # print(module.config)
+            # print(module.config.gpu)
+            # print(type(module.config.gpu))
+            # print(module.config.gpu.idx)
+            # print(type(module.config.gpu.idx))
+            # print(int(module.config.gpu.idx))
+            batch = sample_to_cuda(batch, int(module.config.gpu.idx))
             output = module.training_step(batch, i)
             # Backprop through loss and take an optimizer step
             output['loss'].backward()
@@ -141,7 +160,7 @@ class HorovodTrainer(BaseTrainer):
             # For all batches
             for i, batch in progress_bar:
                 # Send batch to GPU and take a validation step
-                batch = sample_to_cuda(batch)
+                batch = sample_to_cuda(batch, int(module.config.gpu.idx))
                 output = module.validation_step(batch, i, n)
                 # Append output to list of outputs
                 outputs.append(output)
@@ -152,7 +171,7 @@ class HorovodTrainer(BaseTrainer):
 
     def test(self, module):
         # Send module to GPU
-        module = module.to('cuda:0', dtype=self.dtype)
+        module = module.to('cuda:{}'.format(int(module.config.gpu.idx)), dtype=self.dtype)
         # Get test dataloaders
         test_dataloaders = module.test_dataloader()
         # Run evaluation
@@ -173,7 +192,7 @@ class HorovodTrainer(BaseTrainer):
             # For all batches
             for i, batch in progress_bar:
                 # Send batch to GPU and take a test step
-                batch = sample_to_cuda(batch, self.dtype)
+                batch = sample_to_cuda(batch, int(module.config.gpu.idx), self.dtype)
                 output = module.test_step(batch, i, n)
                 # Append output to list of outputs
                 outputs.append(output)
