@@ -41,9 +41,13 @@ cfg.save.depth.png = True               # Flag for saving png depth maps
 ########################################################################################################################
 cfg.wandb = CN()
 cfg.wandb.dry_run = True                                 # Wandb dry-run (not logging)
-cfg.wandb.name = ''                                      # Wandb run name
+# cfg.wandb.dry_run = False
+cfg.wandb.name = ''  
+# cfg.wandb.name = 'euroc-test-run'                                      # Wandb run name
 cfg.wandb.project = os.environ.get("WANDB_PROJECT", "")  # Wandb project
-cfg.wandb.entity = os.environ.get("WANDB_ENTITY", "")    # Wandb entity
+# cfg.wandb.entity = os.environ.get("WANDB_ENTITY", "")    # Wandb entity
+# cfg.wandb.project = 'ucm_euroc'  # Wandb project
+cfg.wandb.entity = 'fjd'    # Wandb entity
 cfg.wandb.tags = []                                      # Wandb tags
 cfg.wandb.dir = ''                                       # Wandb save folder
 ########################################################################################################################
@@ -140,8 +144,8 @@ cfg.datasets.augmentation.jittering = (0.2, 0.2, 0.2, 0.05)     # Color jitterin
 cfg.datasets.train = CN()
 cfg.datasets.train.batch_size = 8                   # Training batch size
 cfg.datasets.train.num_workers = 16                 # Training number of workers
-cfg.datasets.train.back_context = 1                 # Training backward context
-cfg.datasets.train.forward_context = 1              # Training forward context
+cfg.datasets.train.back_context = [1]                 # Training backward context
+cfg.datasets.train.forward_context = [1]              # Training forward context
 cfg.datasets.train.dataset = []                     # Training dataset
 cfg.datasets.train.path = []                        # Training data path
 cfg.datasets.train.split = []                       # Training split
@@ -155,8 +159,8 @@ cfg.datasets.train.num_logs = 5                     # Number of training images 
 cfg.datasets.validation = CN()
 cfg.datasets.validation.batch_size = 1              # Validation batch size
 cfg.datasets.validation.num_workers = 8             # Validation number of workers
-cfg.datasets.validation.back_context = 0            # Validation backward context
-cfg.datasets.validation.forward_context = 0         # Validation forward contxt
+cfg.datasets.validation.back_context = [0]            # Validation backward context
+cfg.datasets.validation.forward_context = [0]         # Validation forward contxt
 cfg.datasets.validation.dataset = []                # Validation dataset
 cfg.datasets.validation.path = []                   # Validation data path
 cfg.datasets.validation.split = []                  # Validation split
@@ -169,8 +173,8 @@ cfg.datasets.validation.num_logs = 5                # Number of validation image
 cfg.datasets.test = CN()
 cfg.datasets.test.batch_size = 1                    # Test batch size
 cfg.datasets.test.num_workers = 8                   # Test number of workers
-cfg.datasets.test.back_context = 0                  # Test backward context
-cfg.datasets.test.forward_context = 0               # Test forward context
+cfg.datasets.test.back_context = [0]                  # Test backward context
+cfg.datasets.test.forward_context = [0]               # Test forward context
 cfg.datasets.test.dataset = []                      # Test dataset
 cfg.datasets.test.path = []                         # Test data path
 cfg.datasets.test.split = []                        # Test split
@@ -187,6 +191,10 @@ cfg.checkpoint.s3_url = ''      # s3 URL
 cfg.save.pretrained = ''        # Pretrained checkpoint
 cfg.prepared = False            # Prepared flag
 ########################################################################################################################
+### GPU
+########################################################################################################################
+cfg.gpu = CN()
+cfg.gpu.idx = 0
 
 def get_cfg_defaults():
     return cfg.clone()

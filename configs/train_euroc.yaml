@@ -1,39 +1,33 @@
 arch:
     max_epochs: 50
 model:
-    name: 'UCMSelfSupModel'
+    name: 'GenericSelfSupModel'
     optimizer:
         name: 'Adam'
         depth:
             lr: 0.0002
         pose:
             lr: 0.0002
-        intrinsic:
-            lr: 1e-3
     scheduler:
         name: 'StepLR'
         step_size: 30
         gamma: 0.5
     depth_net:
-        # name: 'EUROCUCMResNet'
-        name: 'UCMResNet'
+        name: 'RaySurfaceResNet'
         version: '18pt'
-        # version: '18n'
     pose_net:
-        # name: 'EUROCPoseResNet'
         name: 'PoseResNet'
         version: '18pt'
-        # version: '18n'
     params:
         crop: 'garg'
         min_depth: 0.0
         max_depth: 80.0
 datasets:
     augmentation:
-        # image_shape: (480, 752)
+        # image_shape: (752, 480)
         image_shape: (256, 384)
     train:
-        batch_size: 16
+        batch_size: 1
         dataset: ['EUROC']
         # path: ['/data/datasets/euroc_cam/cam0']
         path: ['/data/datasets/euroc_MH/cam0']
@@ -71,11 +65,11 @@ datasets:
         split: ['{:19}']
         depth_type: ['vicon']
 wandb:
-    dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    # dry_run: False                   # False means using wandb logging online, True means no wandb logging
     # dry_run: True
     # name: 'euroc-tiny-test-run-1'/
     project: 'ucm_euroc'
     # project: 'my-test-project'
     dir: '/data/datasets/results'
 gpu:
-    idx: 3
+    idx: 0

@@ -50,3 +50,12 @@ datasets:
         split: ['val']
         depth_type: ['lidar']
         cameras: [['camera_01']]
+wandb:
+    dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    # dry_run: True
+    # name: 'euroc-tiny-test-run-1'/
+    project: 'ucm_ddad'
+    # project: 'my-test-project'
+    dir: '/data/datasets/results'
+gpu:
+    idx: 1
