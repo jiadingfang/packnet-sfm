@@ -28,7 +28,7 @@ def get_idx(filename):
 class EUROCDataset(Dataset):
     def __init__(self, root_dir, split, data_transform=None,
                  forward_context=0, back_context=0, strides=(1,),
-                 depth_type=None, **kwargs):
+                 depth_type=None, cameras=[], **kwargs):
         super().__init__()
         # Asserts
         # assert depth_type is None or depth_type == '', \
@@ -38,6 +38,8 @@ class EUROCDataset(Dataset):
 
         self.root_dir = root_dir
         self.split = split
+
+        self.cameras = cameras
 
         self.backward_context = back_context
         self.forward_context = forward_context
@@ -59,15 +61,8 @@ class EUROCDataset(Dataset):
             files = [fname for fname in sorted(v) if self._has_context(fname, file_set)]
             # files = [fname for fname in sorted(v)]
             self.files.extend([[k, fname] for fname in files])
-            # print('k')
-            # print(k)
-            # print('files')
-            # print(files)
 
         self.data_transform = data_transform
-
-        # print('self files')
-        # print(self.files[:10])
 
     def read_files(self, directory, ext=('.png', '.jpg', '.jpeg'), skip_empty=True):
         files = defaultdict(list)
@@ -94,13 +89,6 @@ class EUROCDataset(Dataset):
     def _has_context(self, filename, file_set):
         context_paths = self._get_context_file_paths(filename, file_set)
 
-        # print('filename')
-        # print(filename)
-        # print('context_paths')
-        # print(context_paths)
-        # print('has_context')
-        # print(([f in file_set for f in context_paths]))
-
         return all([f in file_set for f in context_paths])
 
     def _get_context_file_paths(self, filename, file_set):
@@ -110,13 +98,6 @@ class EUROCDataset(Dataset):
         potential_files = [self._change_idx(fidx + i, filename) for i in idxs]
         valid_paths = [fname for fname in potential_files if fname in file_set]
 
-        # print('get context file paths')
-        # print(filename)
-        # print(idxs)
-        # print(potential_files)
-        # print(valid_paths)
-        # print(file_set)
-
         # return [self._change_idx(fidx + i, filename) for i in idxs]
         return valid_paths
 
@@ -124,13 +105,8 @@ class EUROCDataset(Dataset):
         file_set = set(self.file_tree[session])
         context_paths = self._get_context_file_paths(filename, file_set)
 
-        # print('context_paths')
-        # print(context_paths)
-        # print([os.path.isfile(os.path.join(self.root_dir, session, filename)) for filename in context_paths])
-
         return [self._read_rgb_file(session, filename) for filename in context_paths]
-        # return [load_image(os.path.join(self.root_dir, session, filename))
-        #         for filename in context_paths]
+
 
     def _read_rgb_file(self, session, filename):
 
@@ -138,23 +114,7 @@ class EUROCDataset(Dataset):
         gray_image_np = np.array(gray_image)
         rgb_image_np = np.stack([gray_image_np for _ in range(3)], axis=2)
         rgb_image = Image.fromarray(rgb_image_np)
-
-        # print('root dir')
-        # print(self.root_dir)
-        # print('session')
-        # print(session)
-        # print('filename')
-        # print(filename)
-        # print('path')
-        # print(os.path.join(self.root_dir, session, filename))
-        # print('gray_image')
-        # print(type(gray_image))
-        # print(gray_image_np.shape)
-        # print(np.max(gray_image_np))
-        # print('rgb image')
-        # print(rgb_image_np.shape)
-
-        # return load_image(os.path.join(self.root_dir, session, filename))
+        
         return rgb_image
 
     def _read_npy_depth(self, session, depth_filename):
@@ -171,21 +131,21 @@ class EUROCDataset(Dataset):
 
     def _has_depth(self, session, depth_filename):
         depth_file_path = os.path.join(self.root_dir, session, '../../depth_maps', depth_filename)
-        # print('depth_file_path')
-        # print(depth_file_path)
-        # print(os.path.isfile(depth_file_path))
+
         return os.path.isfile(depth_file_path)
 
     def __getitem__(self, idx):
         session, filename = self.files[idx]
         image = self._read_rgb_file(session, filename)
 
+        intrinsic_type = 'euroc' if len(self.cameras) == 0 else 'euroc_{}'.format(self.cameras[0])
+
         sample = {
             'idx': idx,
             'filename': '%s_%s' % (session, os.path.splitext(filename)[0]),
             'rgb': image,
             'intrinsics': dummy_calibration(image),
-            'intrinsic_type': 'euroc'
+            'intrinsic_type': intrinsic_type
         }
 
         if self.has_context:
@@ -196,8 +156,7 @@ class EUROCDataset(Dataset):
         if self.with_depth:
             if self._has_depth(session, depth_filename):
                 sample['depth'] = self._read_depth(session, depth_filename)
-                # print('depth')
-                # print(sample['depth'].shape)
+
 
         if self.data_transform:
             sample = self.data_transform(sample)
@@ -205,3 +164,22 @@ class EUROCDataset(Dataset):
         return sample
 
 ########################################################################################################################
+# if __name__ == "__main__":
+#     data_dir = '/data/datasets/euroc/V1_01_easy_has_depth/mav0'
+#     euroc_dataset = EUROCDataset(root_dir=data_dir,split='{:09}',depth_type='vicon',
+#                                 forward_context=249999872,back_context=250000128, 
+#                                 cameras=['cam0'])
+#     print(len(euroc_dataset))
+#     print(euroc_dataset[0].keys())
+#     print(euroc_dataset[0]['rgb'])
+#     print(euroc_dataset[0]['rgb_context'])
+#     print(euroc_dataset[0]['intrinsics'].shape)
+#     print(euroc_dataset[0]['intrinsic_type'])
+#     print(euroc_dataset[0]['depth'].shape)
+
+    # data_dir = '/data/datasets/pd_pinhole_euroc'
+    # pd_dataset = EUROCDataset(root_dir=data_dir, split='{:09}', depth_type='vicon',
+    #                             forward_context=1,back_context=1)
+    # print(len(pd_dataset))
+    # print(pd_dataset[0].keys())
+    # print(pd_dataset[0]['rgb_context'])

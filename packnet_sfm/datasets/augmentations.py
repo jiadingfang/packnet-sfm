@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 import random
+import torch
 import torchvision.transforms as transforms
 from PIL import Image
 
@@ -236,4 +237,47 @@ def colorjitter_sample(sample, parameters, prob=1.0):
 
 ########################################################################################################################
 
+def random_flip_sample(sample, prob=0.5):
+    hflipper = transforms.RandomHorizontalFlip(p=1) # make a determined hflip
+    vflipper = transforms.RandomVerticalFlip(p=1) # make a determined vflip
 
+    p1, p2 = torch.rand(1), torch.rand(1) # make two guesses
+    if p1 < prob and p2 < prob: 
+        flipper = transforms.Compose([])
+    elif p1 >= prob and p2 < prob:
+        flipper = transforms.Compose([hflipper])
+    elif p1 < prob and p2 >= prob:
+        flipper = transforms.Compose([vflipper])
+    else:
+        flipper = transforms.Compose([hflipper, vflipper])
+
+    # Flip single items
+    for key in filter_dict(sample, [
+        'rgb'
+    ]):
+        sample[key] = flipper(sample[key])
+    # Flip lists
+    for key in filter_dict(sample, [
+        'rgb_context'
+    ]):
+        sample[key] = [flipper(k) for k in sample[key]]
+    # Return flipped sample
+    return sample
+
+    ########################################################################################################################
+
+def center_crop_sample(sample, crop_shape):
+    cropper = transforms.CenterCrop(size=crop_shape)
+
+    # Crop single items
+    for key in filter_dict(sample, [
+        'rgb'
+    ]):
+        sample[key] = cropper(sample[key])
+    # Crop lists
+    for key in filter_dict(sample, [
+        'rgb_context'
+    ]):
+        sample[key] = [cropper(k) for k in sample[key]]
+    # Return cropped sample
+    return sample
