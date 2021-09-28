@@ -214,6 +214,16 @@ class ModelWrapper(torch.nn.Module):
         """Processes a training batch."""
         batch = stack_batch(batch)
         output = self.model(batch, progress=self.progress)
+        # return {
+        #     'loss': output['loss'],
+        #     'metrics': output['metrics'],
+        #     'image': output['image'],
+        #     'context': output['context'],
+        #     'inv_depths': output['inv_depths'],
+        #     'poses': output['poses'],
+        #     'I': output['I'],
+        #     'ref_I': output['ref_I']
+        # }
         return {
             'loss': output['loss'],
             'metrics': output['metrics']
@@ -581,6 +591,22 @@ def setup_dataset(config, mode, requirements, **kwargs):
         elif config.dataset[i] == 'EUROC':
             from packnet_sfm.datasets.euroc_dataset import EUROCDataset
             dataset = EUROCDataset(
+                config.path[i], config.split[i],
+                **dataset_args, **dataset_args_i,
+                cameras=config.cameras[i],
+            )
+        # PD dataset
+        elif config.dataset[i] == 'PD':
+            from packnet_sfm.datasets.pd_euroc_dataset import PDEUROCDataset
+            # print('config.path[i]')
+            # print(config.path[i])
+            # print('config.split[i]')
+            # print(config.split[i])
+            # print('dataset_args')
+            # print(dataset_args)
+            # print('dataset_args_i')
+            # print(dataset_args_i)
+            dataset = PDEUROCDataset(
                 config.path[i], config.split[i],
                 **dataset_args, **dataset_args_i,
             )

@@ -105,6 +105,16 @@ class UCMSelfSupModel(UCMSfmModel):
         # B = len(batch['idx'])
         # batch_I = torch.zeros((B,5))
         # for i in range(B):
+        #     if batch['intrinsic_type'][i] == 'euroc_cam0':
+        #         batch_I[i, :] = I_0
+        #     elif batch['intrinsic_type'][i] == 'euroc_cam1':
+        #         batch_I[i, :] = I_1
+        #     else:
+        #         raise ValueError('only implement for euroc_cam0 and euroc_cam1')
+
+        # B = len(batch['idx'])
+        # batch_I = torch.zeros((B,5))
+        # for i in range(B):
         #     if batch['intrinsic_type'][i] == 'euroc':
         #         batch_I[i, :] = I_0
         #     elif batch['intrinsic_type'][i] == 'omnicam':
@@ -121,6 +131,16 @@ class UCMSelfSupModel(UCMSfmModel):
         #         batch_I[i, :] = I_1
         #     else:
         #         raise ValueError('only implement for euroc and kitti')
+
+        # B = len(batch['idx'])
+        # batch_I = torch.zeros((B,5))
+        # for i in range(B):
+        #     if batch['intrinsic_type'][i] == 'kitti':
+        #         batch_I[i, :] = I_0
+        #     elif batch['intrinsic_type'][i] == 'omnicam':
+        #         batch_I[i, :] = I_1
+        #     else:
+        #         raise ValueError('only implement for kitti and omnicam')
         
         # print('batch_I')
         # print(batch_I)
@@ -128,6 +148,7 @@ class UCMSelfSupModel(UCMSfmModel):
         if self.counter % 100 == 0:
             print()
             print(I)
+            # print(output['poses'][0].item().shape)
             # print(batch['intrinsic_type'])
             # print(I_0)
             # print(I_1)

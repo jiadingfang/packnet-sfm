@@ -1,4 +1,5 @@
 # Copyright 2020 Toyota Research Institute.  All rights reserved.
+# import torch
 
 import argparse
 
@@ -37,6 +38,25 @@ def train(file):
 
     # Produce configuration and checkpoint from filename
     config, ckpt = parse_train_file(file)
+    # print('config')
+    # print(config)
+    # print('ckpt')
+    # print(ckpt)
+
+    # config.datasets.augmentation.center_crop = False
+    # config.datasets.augmentation.random_hflip = True
+    # config.datasets.augmentation.random_vflip = True
+    # config.wandb.dry_run = False
+    # config.wandb.name = 'fine_tunning_euroc_173'
+    # config.arch.max_epochs = 100
+    # config.gpu.idx = 2
+    # print('intrinsic vector')
+    # print(type(ckpt['state_dict']))
+    # print(ckpt['state_dict'].keys())
+    # print(ckpt['state_dict']['model.depth_net.intrinsic_decoder.intrinsic_vector'])
+    # ckpt['state_dict']['model.depth_net.intrinsic_decoder.intrinsic_vector'] = torch.tensor([-2.0, -2.0, -2.0,-2.0, 0.0, 1.0])
+    # print(ckpt.depth_net.intrinsic_decoder.intrinsic_vector)
+    
 
     # Set debug if requested
     set_debug(config.debug)

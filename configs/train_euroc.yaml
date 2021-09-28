@@ -26,6 +26,8 @@ datasets:
     augmentation:
         # image_shape: (752, 480)
         image_shape: (256, 384)
+        random_flip: True
+        center_crop: True
     train:
         batch_size: 1
         dataset: ['EUROC']
@@ -50,7 +52,6 @@ datasets:
         # back_context: [250000128]     # for has_depth dataset
         split: ['{:19}']
         depth_type: ['vicon']
-        # repeat: [1]
         repeat: [1]
     validation:
         dataset: ['EUROC']
@@ -66,10 +67,7 @@ datasets:
         depth_type: ['vicon']
 wandb:
     # dry_run: False                   # False means using wandb logging online, True means no wandb logging
-    # dry_run: True
-    # name: 'euroc-tiny-test-run-1'/
     project: 'ucm_euroc'
-    # project: 'my-test-project'
     dir: '/data/datasets/results'
 gpu:
     idx: 0

@@ -2,11 +2,18 @@
 
 import os
 import torch
+from torch import autograd
+# from torch.autograd.functional import jacobian
 import horovod.torch as hvd
 from packnet_sfm.trainers.base_trainer import BaseTrainer, sample_to_cuda
 from packnet_sfm.utils.config import prep_logger_and_checkpoint
 from packnet_sfm.utils.logging import print_config
 from packnet_sfm.utils.logging import AvgMeter
+
+from packnet_sfm.geometry.camera_utils import view_synthesis
+from packnet_sfm.geometry.camera_eucm import EUCMCamera
+from packnet_sfm.utils.depth import inv2depth
+from packnet_sfm.geometry.pose import Pose
 
 
 class HorovodTrainer(BaseTrainer):
@@ -46,18 +53,24 @@ class HorovodTrainer(BaseTrainer):
         # print(module.optimizer)
 
         # print('module parameters')
-        # counter = 0
+        # # counter = 0
         # for name, parameter in module.named_parameters():
-        #     print(name)
-        #     # print(parameter)
+        #     if  'depth_net.encoder' in name:
+        #         print(name)
+        #         print(parameter.shape)
         #     counter += 1
 
         # for name, param in module.named_parameters():
         #     if param.requires_grad and 'intrinsic_vector' in name:
-        #         param.requires_grad = False
+        #         # param.requires_grad = False
+        #         print(param.data)
+        #         param.data = torch.tensor([-2.0, -2.0, -2.0, -2.0, 0.0, 1.0])
+        #         param.data = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        #         print(param.data)
 
         # for name, param in module.named_parameters():
-        #     print(name)
+        #     if ('depth' in name or 'pose' in name) and ('intrinsic' not in name):
+        #         print(name)
         #     print(param.requires_grad)
 
 
@@ -74,8 +87,8 @@ class HorovodTrainer(BaseTrainer):
         # Epoch loop
         for epoch in range(module.current_epoch, self.max_epochs):
             
-            # Free intrinsic vector in first 10 epochs
-            if epoch < 10:
+            # Freeze intrinsic vector in first 10 epochs
+            if epoch < 50:
                 for name, param in module.named_parameters():
                     if param.requires_grad and 'intrinsic_vector' in name:
                         param.requires_grad = False
@@ -83,6 +96,17 @@ class HorovodTrainer(BaseTrainer):
                 for name, param in module.named_parameters():
                     if not param.requires_grad and 'intrinsic_vector' in name:
                         param.requires_grad = True
+
+            # Freeze depth and pose networks after 50 epochs
+            # if epoch >= 49:
+            #     for name, param in module.named_parameters():
+            #         if param.requires_grad and ('depth' in name or 'pose' in name) and ('intrinsic' not in name):
+            #             param.requires_grad = False
+
+            # print('check requires_grad')
+            # for name, param in module.named_parameters():
+            #     if param.requires_grad:
+            #         print(name)
 
             # Train
             self.train(train_dataloader, module, optimizer)
@@ -111,17 +135,70 @@ class HorovodTrainer(BaseTrainer):
             # Reset optimizer
             optimizer.zero_grad()
             # Send samples to GPU and take a training step
-            # print('config')
-            # print(module.config)
-            # print(module.config.gpu)
-            # print(type(module.config.gpu))
-            # print(module.config.gpu.idx)
-            # print(type(module.config.gpu.idx))
-            # print(int(module.config.gpu.idx))
             batch = sample_to_cuda(batch, int(module.config.gpu.idx))
             output = module.training_step(batch, i)
             # Backprop through loss and take an optimizer step
             output['loss'].backward()
+            optimizer.step()
+
+            # # print(output.keys())
+            # image = output['image']
+            # print(image.shape)
+            # context = output['context']
+            # print(len(context))
+            # # print(context[0].shape)
+            # inv_depth = output['inv_depths'][0].detach()
+            # # print(len(inv_depths))
+            # print(inv_depth.shape)
+            # poses = [Pose(pose.mat.detach()) for pose in output['poses']]
+            # print(len(poses))
+            # I = output['I'].detach()
+            # print(I.shape)
+
+            # def warp_ref_image(inv_depth, ref_image, I, ref_I, pose):
+            #     B, _, H, W = ref_image.shape
+            #     device = ref_image.get_device()
+            #     # Generate camera
+            #     _, _, DH, DW = inv_depth.shape
+            #     scale_factor = DW / float(W)
+            #     cam = EUCMCamera(I=I).to(device)
+            #     ref_cam = EUCMCamera(I=ref_I, Tcw=pose).to(device)
+            #     # View synthesis
+            #     depths = inv2depth(inv_depth)
+            #     # ref_images = match_scales(ref_image, inv_depths, self.n)
+            #     ref_warped = view_synthesis(
+            #         ref_image, depths, ref_cam, cam,
+            #         padding_mode='zeros')
+            #     # Return warped reference image
+            #     return ref_warped
+
+            # def calc_ba_loss(image, context, inv_depth, poses, I):
+            #     B, _, H, W = image.shape
+            #     n_pts = 100
+            #     sample_points = torch.randperm(H * W)[:n_pts]
+            #     for j, (ref_image, pose) in enumerate(zip(context, poses)):
+            #         def calc_error_vec(I):
+            #             # Calculate warped images
+            #             ref_warped = warp_ref_image(inv_depth, ref_image, I, I, pose)
+            #             # photometric loss and on first batch item
+            #             photometric_loss = torch.norm(ref_warped - image, dim=1)[0].view(-1)
+            #             # photometric loss on selected points
+            #             pts_photometric_loss = photometric_loss[sample_points]
+
+            #             return pts_photometric_loss
+
+            #             # calculate Jacobian
+            #             J = jacobian(calc_error_vec, I)
+            #             print(J)
+            #     return
+            # ba_loss = calc_ba_loss(image, context, inv_depth, poses, I)
+
+            # with autograd.detect_anomaly():
+            #     output = module.training_step(batch, i)
+            #     # Backprop through loss and take an optimizer step
+            #     print('output loss')
+            #     print(output['loss'])
+            #     output['loss'].backward()
 
             # for name, param in module.named_parameters():
             #     if name == 'model.depth_net.intrinsic_decoder.intrinsic_vector':
@@ -134,7 +211,7 @@ class HorovodTrainer(BaseTrainer):
             #         print('requires grad')
             #         print(param.requires_grad)
 
-            optimizer.step()
+            
             # Append output to list of outputs
             output['loss'] = output['loss'].detach()
             outputs.append(output)
@@ -159,6 +236,11 @@ class HorovodTrainer(BaseTrainer):
             outputs = []
             # For all batches
             for i, batch in progress_bar:
+                # print('batch')
+                # print(batch.keys())
+                # print(batch['rgb'].shape)
+                # print(batch['rgb_context'][0].shape)
+                # print(batch['rgb_context'][1].shape)
                 # Send batch to GPU and take a validation step
                 batch = sample_to_cuda(batch, int(module.config.gpu.idx))
                 output = module.validation_step(batch, i, n)

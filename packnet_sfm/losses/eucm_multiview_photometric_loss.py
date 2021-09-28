@@ -345,7 +345,7 @@ class EUCMMultiViewPhotometricLoss(LossBase):
         # print(torch.sum(torch.logical_not(mask)))
 
         return mask
-
+        
 ########################################################################################################################
 
     def forward(self, image, context, inv_depths,
@@ -381,20 +381,14 @@ class EUCMMultiViewPhotometricLoss(LossBase):
         self.n = self.progressive_scaling(progress)
         # Loop over all reference images
         photometric_losses = [[] for _ in range(self.n)]
+
         images = match_scales(image, inv_depths, self.n)
+
         for j, (ref_image, pose) in enumerate(zip(context, poses)):
             # Calculate warped images
             ref_warped = self.warp_ref_image(inv_depths, ref_image, I, ref_I, pose)
             # Calculate and store image loss
             photometric_loss = self.calc_photometric_loss(ref_warped, images)
-
-            # if j == 0:
-            #     print('ref warped')
-            #     print(ref_warped[0])
-            #     print(ref_warped[0].shape)
-            #     print('photometric loss')
-            #     print(photometric_loss[0])
-            #     print(photometric_loss[0].shape)
 
             for i in range(self.n):
                 photometric_losses[i].append(photometric_loss[i])
@@ -419,6 +413,12 @@ class EUCMMultiViewPhotometricLoss(LossBase):
         return {
             'loss': loss.unsqueeze(0),
             'metrics': self.metrics,
+            'image': image,
+            'context': context,
+            # 'inv_depths': inv_depths,
+            'I': I,
+            'ref_I': ref_I,
+            # 'poses': poses
         }
 
 ########################################################################################################################

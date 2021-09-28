@@ -8,19 +8,32 @@
 # PROJECT ?= packnet-sfm-ucm-384x384-omnicam
 # PROJECT ?= packnet-sfm-ucm-512x512-omnicam
 # PROJECT ?= packnet-sfm-ucm-1024x1024-omnicam
+# PROJECT ?= packnet-sfm-ucm-384x640-ddad
 # PROJECT ?= packnet-sfm-intrinsic-128x128-omnicam
 # PROJECT ?= packnet-sfm-intrinsic-192x640-omnicam
-# PROJECT ?= packnet-infer
-PROJECT ?= packnet-test
+# PROJECT ?= packnet-sfm-ucm-752x480-euroc
+# PROJECT ?= packnet-sfm-ucm-256x384-euroc
+PROJECT ?= packnet-infer
+# PROJECT ?= packnet-test
 # PROJECT ?= packnet-test1
 # PROJECT ?= packnet-test2
 # PROJECT ?= packnet-test3
 # PROJECT ?= packnet-train
+# PROJECT ?= packnet-double
+# PROJECT ?= packnet-double1
+# PROJECT ?= packnet-double2
+# PROJECT ?= packnet-double3
+# PROJECT ?= packnet-ds
+# PROJECT ?= packnet-fov
+# PROJECT ?= packnet-pd
+
+
 WORKSPACE ?= /workspace/$(PROJECT)
 DOCKER_IMAGE ?= ${PROJECT}:latest
 
 SHMSIZE ?= 444G
 WANDB_MODE ?= run
+WANDB_API_KEY=0deb7a9c0b27618e1de0b5c1468716fbc482f1a1
 DOCKER_OPTS := \
 			--name ${PROJECT} \
 			--rm -it \
@@ -28,7 +41,7 @@ DOCKER_OPTS := \
 			-e AWS_DEFAULT_REGION \
 			-e AWS_ACCESS_KEY_ID \
 			-e AWS_SECRET_ACCESS_KEY \
-			-e WANDB_API_KEY \
+			-e WANDB_API_KEY=${WANDB_API_KEY} \
 			-e WANDB_ENTITY \
 			-e WANDB_MODE \
 			-e HOST_HOSTNAME= \

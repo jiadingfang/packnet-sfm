@@ -99,7 +99,7 @@ class UCMCamera(nn.Module):
         flat_grid = grid.view(B, 3, -1)  # [B,3,HW]
 
         # Estimate the outward rays in the camera frame
-        fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha
+        fx, fy, cx, cy, alpha = self.fx, self.fy, self.cx, self.cy, self.alpha # [B,1,1]
 
         if torch.any(torch.isnan(alpha)):
             raise ValueError('alpha is nan')
@@ -121,16 +121,41 @@ class UCMCamera(nn.Module):
         r_square = mx ** 2 + my ** 2
 
         # detached_alpha = alpha.detach()
-        # mask = (r_square <= (1 - alpha) ** 2 / (2 * alpha - 1)) | (detached_alpha <= 1/2)
+        mask = (r_square <= (1 - alpha) ** 2 / (2 * alpha - 1)) | (alpha <= 1/2) # [B, H, W]
 
         # print('mask')
         # print(mask.shape)
+        # print(torch.sum(mask).item() / mask.shape[0] / mask.shape[1] / mask.shape[2])
         # print(mask.requires_grad)
         # print(torch.sum(torch.logical_not(mask)))
 
-        xi = alpha / (1 - alpha)
+        xi = alpha / (1 - alpha) # [B, 1, 1]
+        coeff = (xi + torch.sqrt(1 + (1 - xi ** 2) * r_square)) / (1 + r_square) # [B, H, W]
+        
+        # print(coeff.shape)
+        # print(xi.shape)
 
-        coeff = (xi + torch.sqrt(1 + (1 - xi ** 2) * r_square)) / (1 + r_square)
+        if torch.any(torch.isnan(coeff)):
+            print(mask[torch.isnan(coeff)])
+            print('fx')
+            print(fx)
+            print('fy')
+            print(fy)
+            print('cx')
+            print(cx)
+            print('cy')
+            print(cy)
+            print('alpha')
+            print(alpha)
+            print('xi')
+            print(xi)
+            # print('1 + (1 - xi ** 2) * r_square')
+            # print(1 + (1 - xi ** 2) * r_square)
+            print('nan ratio')
+            print(torch.sum(mask).item() / mask.shape[0] / mask.shape[1] / mask.shape[2])
+            # raise ValueError('coeff is nan')
+
+
         # coeff = torch.where(mask, coeff, 0) # to guarantee coeff calculation is valid, will exclude it in the loss computation
 
         # print('fx, fy ,cx, cy, alpha')

@@ -410,3 +410,24 @@ class KITTIDataset(Dataset):
         return sample
 
 ########################################################################################################################
+if __name__ == "__main__":
+    kitti_dataset = KITTIDataset(root_dir='/data/datasets/KITTI_raw', 
+                                file_list='/data/datasets/KITTI_raw/data_splits/eigen_zhou_files.txt', 
+                                forward_context=1, 
+                                back_context=1,
+                                depth_type='velodyne',
+                                with_pose=True)
+    print(len(kitti_dataset))
+    print(kitti_dataset[0].keys())
+    print(kitti_dataset[0]['rgb'])
+    print(kitti_dataset[0]['rgb_context'])
+    print('intrinsics')
+    print(kitti_dataset[0]['intrinsics'])
+    print(kitti_dataset[0]['intrinsics'].shape)
+    print('depth')
+    # print(kitti_dataset[0]['depth'])
+    print(kitti_dataset[0]['depth'].shape)
+    print(type(kitti_dataset[0]['depth']))
+    print('pose')
+    # print(kitti_dataset[0]['pose'])
+    print(kitti_dataset[0]['pose'].shape)

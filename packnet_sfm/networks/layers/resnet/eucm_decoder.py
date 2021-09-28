@@ -26,12 +26,18 @@ class EUCMDecoder(nn.Module):
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
         # camera intrinsic parameter as a vector
-        i = torch.tensor([235.64381137951174 / 1000, 245.38803860055288 / 1000, 186.44431894063212 / 1000, 132.64829510142745 / 1000, 0.5966287792627975 / 1, 1.1122253956511319 / 2])
+        # i = torch.tensor([235.64381137951174 / 1000, 245.38803860055288 / 1000, 186.44431894063212 / 1000, 132.64829510142745 / 1000, 0.5966287792627975 / 1, 1.1122253956511319 / 2])
+        # i = torch.tensor([251.34/1000, 261.84/1000, 186.08/1000, 132.6/1000, 0.608, 1.082/2])
+        # i = torch.tensor([280/1000, 280/1000, 128/1000, 80/1000, 1, 1])
+        # i = i * 0.9
+        # i = i * 0.95
+        # i = i * 1.05
         # i = i * 1.10
-        sigmoid_inv_i = torch.log(i / (1 - i))
-        self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
+        # sigmoid_inv_i = torch.log(i / (1 - i))
+        # self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
         # self.intrinsic_vector = nn.Parameter(torch.zeros(6))
-        # self.intrinsic_vector = nn.Parameter(-torch.ones(6))
+        self.intrinsic_vector = nn.Parameter(-torch.ones(6))
+        # self.intrinsic_vector = nn.Parameter(torch.tensor([-1.0, -1.0, 0.0, 0.0, -1.0, -1.0]))
 
         # decoder
         self.convs = OrderedDict()
@@ -78,7 +84,10 @@ class EUCMDecoder(nn.Module):
         B = x.shape[0]
         
         fx, fy, cx, cy = self.sigmoid(self.intrinsic_vector[0:4]) * 1000
-        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1
+        # fx, fy = self.sigmoid(self.intrinsic_vector[0:2]) * 1000
+        # dcx = self.tanh(self.intrinsic_vector[2]) * 384.0 / 2
+        # dcy = self.tanh(self.intrinsic_vector[3]) * 256.0 / 2
+        alpha = self.sigmoid(self.intrinsic_vector[4]) * 1/2
         # alpha = 0
         beta = self.sigmoid(self.intrinsic_vector[5]) * 2
         # beta = 1
@@ -86,10 +95,26 @@ class EUCMDecoder(nn.Module):
         I = torch.zeros(6)
         I[0] = fx
         I[1] = fy
+        # I[2] = 384.0 / 2 + dcx
+        # I[3] = 256.0 / 2 + dcy
         I[2] = cx
         I[3] = cy
         I[4] = alpha
-        I[5] = 1
+        I[5] = beta
+
+        # I[0] = 284.9455
+        # I[1] = 283.5395
+        # I[2] = 128.0000
+        # I[3] = 80.0000
+        # I[4] = 0.0
+        # I[5] = 1.0
+
+        # I[0] = 235.64381137951174
+        # I[1] = 245.38803860055288
+        # I[2] = 186.44431894063212
+        # I[3] = 132.64829510142745
+        # I[4] = 0.5966287792627975
+        # I[5] = 1.1122253956511319
 
         self.output = I.unsqueeze(0).repeat(B,1)
 

@@ -26,16 +26,18 @@ class UCMDecoder(nn.Module):
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
         # camera intrinsic parameter as a vector
-        i = torch.tensor([235.4/1000, 245.1/1000, 186.5/1000, 132.6/1000, 0.65])
+        # i = torch.tensor([235.4/1000, 245.1/1000, 186.5/1000, 132.6/1000, 0.65])
+        # i = torch.tensor([[307.4048/1000, 200.0247/1000, 242.0782/1000, 163.3021/1000, 0.8899], [307.4048/1000, 200.0247/1000, 242.0782/1000, 163.3021/1000, 0.8899]])
         # i = i * 0.9
         # i = i * 0.95
         # i = i * 1.05
-        i = i * 1.10
-        sigmoid_inv_i = torch.log(i / (1 - i))
-        self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
+        # i = i * 1.10
+        # sigmoid_inv_i = torch.log(i / (1 - i))
+        # self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
         # self.intrinsic_vector = nn.Parameter(torch.zeros(5))
-        # self.intrinsic_vector = nn.Parameter(-torch.ones(5))
-        # self.intrinsic_vector = nn.Parameter(-torch.ones(5) * 2)
+        self.intrinsic_vector = nn.Parameter(-torch.ones(5))
+        # self.intrinsic_vector = nn.Parameter(torch.ones(2,5))
+        # self.intrinsic_vector = nn.Parameter(-torch.ones(2,5))
         # self.intrinsic_vector = nn.Parameter(torch.tensor([-1.0, -1.0, -1.0, -2.0, -1.0]))
         # self.intrinsic_vector = nn.Parameter(torch.tensor([[-1.0, -1.0, -1.0, -2.0, -1.0],
         #                                                     [-1.0, -1.0, -1.0, -2.0, -1.0]]))
@@ -87,6 +89,7 @@ class UCMDecoder(nn.Module):
         
         # single dataset tensor
         fx, fy, cx, cy = self.sigmoid(self.intrinsic_vector[0:4]) * 1000
+        # alpha = self.sigmoid(self.intrinsic_vector[4]) * 1/2
         alpha = self.sigmoid(self.intrinsic_vector[4]) * 1.0
 
         I = torch.zeros(5)
@@ -95,6 +98,7 @@ class UCMDecoder(nn.Module):
         I[2] = cx
         I[3] = cy
         I[4] = alpha
+        # I[4] = 0
         # I[0] = 235.36
         # I[1] = 245.12
         # I[2] = 186.45
@@ -103,7 +107,7 @@ class UCMDecoder(nn.Module):
 
         self.output = I.unsqueeze(0).repeat(B,1)
 
-        ## double dataset tensor
+        # # double dataset tensor
         # fx_0, fy_0, cx_0, cy_0 = self.sigmoid(self.intrinsic_vector[0, 0:4]) * 1000
         # alpha_0 = self.sigmoid(self.intrinsic_vector[0, 4]) * 1.0
 

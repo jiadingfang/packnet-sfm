@@ -90,7 +90,7 @@ cfg.model.params.max_depth = 80.0       # Maximum depth value to evaluate
 ########################################################################################################################
 cfg.model.loss = CN()
 #
-cfg.model.loss.num_scales = 4                   # Number of inverse depth scales to use
+cfg.model.loss.num_scales = 1                   # Number of inverse depth scales to use
 cfg.model.loss.progressive_scaling = 0.0        # Training percentage to decay number of scales
 cfg.model.loss.flip_lr_prob = 0.5               # Probablity of horizontal flippping
 cfg.model.loss.rotation_mode = 'euler'          # Rotation mode
@@ -110,7 +110,7 @@ cfg.model.loss.automask_loss = True             # Automasking to remove static p
 cfg.model.loss.velocity_loss_weight = 0.1       # Velocity supervision loss weight
 #
 cfg.model.loss.supervised_method = 'sparse-l1'  # Method for depth supervision
-cfg.model.loss.supervised_num_scales = 4        # Number of scales for supervised learning
+cfg.model.loss.supervised_num_scales = 1        # Number of scales for supervised learning
 cfg.model.loss.supervised_loss_weight = 0.9     # Supervised loss weight
 ########################################################################################################################
 ### MODEL.DEPTH_NET
@@ -138,6 +138,9 @@ cfg.datasets = CN()
 cfg.datasets.augmentation = CN()
 cfg.datasets.augmentation.image_shape = (192, 640)              # Image shape
 cfg.datasets.augmentation.jittering = (0.2, 0.2, 0.2, 0.05)     # Color jittering values
+cfg.datasets.augmentation.center_crop = False
+cfg.datasets.augmentation.random_hflip = True
+cfg.datasets.augmentation.random_vflip = True
 ########################################################################################################################
 ### DATASETS.TRAIN
 ########################################################################################################################

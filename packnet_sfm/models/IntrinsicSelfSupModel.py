@@ -22,6 +22,7 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         super().__init__(**kwargs)
         # Initializes the photometric loss
         self._photometric_loss = MultiViewPhotometricLoss(**kwargs)
+        self.I_dict = {}
         self.counter = 0
 
     @property
@@ -29,7 +30,8 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         """Return logs."""
         return {
             **super().logs,
-            **self._photometric_loss.logs
+            **self._photometric_loss.logs,
+            **self.I_dict
         }
 
     def self_supervised_loss(self, image, ref_images, inv_depths, poses,
@@ -86,6 +88,9 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         output = super().forward(batch, return_logs=return_logs)
         # B = batch['intrinsics'].shape[0]
         # batch_K = self.K.unsqueeze(0).repeat(B,1,1)
+        I = output['intrinsics'][0]
+        self.I_dict = {'fx': I[0,0].item(), 'fy': I[1,1].item(), 'cx': I[0,2].item(), 'cy': I[1,2].item()}
+        batch_I = output['intrinsics']
 
         if self.counter % 100 == 0:
             print()
@@ -103,7 +108,7 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
 
             self_sup_output = self.self_supervised_loss(
                 batch['rgb_original'], batch['rgb_context_original'],
-                output['inv_depths'], output['poses'], output['intrinsics'],
+                output['inv_depths'], output['poses'], batch_I,
                 return_logs=return_logs, progress=progress)
 
             # self_sup_output = self.self_supervised_loss(

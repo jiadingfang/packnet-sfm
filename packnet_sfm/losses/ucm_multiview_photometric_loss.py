@@ -209,6 +209,8 @@ class UCMMultiViewPhotometricLoss(LossBase):
         if self.ssim_loss_weight > 0.0:
             ssim_loss = [self.SSIM(t_est[i], images[i], kernel_size=3)
                          for i in range(self.n)]
+            # print('ssm_loss')
+            # print(ssim_loss)
             # Weighted Sum: alpha * ssim + (1 - alpha) * l1
             photometric_loss = [self.ssim_loss_weight * ssim_loss[i].mean(1, True) +
                                 (1 - self.ssim_loss_weight) * l1_loss[i].mean(1, True)
@@ -224,7 +226,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # Return total photometric loss
         return photometric_loss
 
-    def reduce_photometric_loss(self, photometric_losses, mask=None):
+    def reduce_photometric_loss(self, photometric_losses):
         """
         Combine the photometric loss from all context images
 
@@ -233,37 +235,26 @@ class UCMMultiViewPhotometricLoss(LossBase):
         photometric_losses : list of torch.Tensor [B,3,H,W]
             Pixel-wise photometric losses from the entire context
 
-        mask : torch.bool [B,1,H,W]
-            mask for valid pixels in UCM model
-
         Returns
         -------
         photometric_loss : torch.Tensor [1]
             Reduced photometric loss
         """
         # Reduce function
-        def reduce_function(losses, mask=None):
-            # print(self.photometric_reduce_op)
-            # print('losses')
-            # print(len(losses))
-            # print(losses[0].shape)
-            # print(torch.cat(losses, 1).shape)
-            # print(torch.cat(losses, 1).min(1, True)[0].shape)
+        def reduce_function(losses):
             if self.photometric_reduce_op == 'mean':
-                if mask is None:
-                    return sum([l.mean() for l in losses]) / len(losses)
-                else:
-                    return sum([torch.masked_select(l, mask).mean() for l in losses]) / len(losses)
+                return sum([l[~torch.isnan(l)].mean() for l in losses]) / len(losses)
+                # return sum([l.mean() for l in losses]) / len(losses)
             elif self.photometric_reduce_op == 'min':
-                if mask is None:
-                    return torch.cat(losses, 1).min(1, True)[0].mean()
-                else:
-                    return torch.masked_select(torch.cat(losses, 1).min(1, True)[0], mask).mean()
+                l = torch.cat(losses, 1).min(1, True)[0]
+                l_mean = l[~torch.isnan(l)].mean()
+                return l_mean
+                # return torch.cat(losses, 1).min(1, True)[0].mean()
             else:
                 raise NotImplementedError(
                     'Unknown photometric_reduce_op: {}'.format(self.photometric_reduce_op))
         # Reduce photometric loss
-        photometric_loss = sum([reduce_function(photometric_losses[i], mask=mask)
+        photometric_loss = sum([reduce_function(photometric_losses[i])
                                 for i in range(self.n)]) / self.n
         # Store and return reduced photometric loss
         self.add_metric('photometric_loss', photometric_loss)
@@ -302,8 +293,9 @@ class UCMMultiViewPhotometricLoss(LossBase):
 ########################################################################################################################
 
     def calc_pixel_mask(self, image, I):
+    # def calc_pixel_unprojection_mask(self, image, I):
         """
-        Calculates mask for valid pixels in UCM model according equation (15) in the double sphere paper
+        Calculates unprojection valid mask for valid pixels in UCM model according equation (15) in the double sphere paper
 
         Parameters
         ----------
@@ -377,22 +369,16 @@ class UCMMultiViewPhotometricLoss(LossBase):
         """
         # If using progressive scaling
         self.n = self.progressive_scaling(progress)
+        # print('self.n')
+        # print(self.n)
         # Loop over all reference images
-        photometric_losses = [[] for _ in range(self.n)]
+        photometric_losses = [[] for _ in range(self.n)] # [[[B,1,H,W], [B,1,H,W], [B,1,H,W], [B,1,H,W]]]
         images = match_scales(image, inv_depths, self.n)
         for j, (ref_image, pose) in enumerate(zip(context, poses)):
             # Calculate warped images
             ref_warped = self.warp_ref_image(inv_depths, ref_image, I, ref_I, pose)
             # Calculate and store image loss
             photometric_loss = self.calc_photometric_loss(ref_warped, images)
-
-            # if j == 0:
-            #     print('ref warped')
-            #     print(ref_warped[0])
-            #     print(ref_warped[0].shape)
-            #     print('photometric loss')
-            #     print(photometric_loss[0])
-            #     print(photometric_loss[0].shape)
 
             for i in range(self.n):
                 photometric_losses[i].append(photometric_loss[i])
@@ -406,12 +392,35 @@ class UCMMultiViewPhotometricLoss(LossBase):
 
         # Calculatet pixel mask
         mask = self.calc_pixel_mask(image, I).to(image.device)
+        # unprojection_mask = self.calc_pixel_unprojection_mask(image, I).to(image.device)
+        # projection_mask = self.calc_pixel_projection_mask()
+        # print('mask')
+        # print(mask)
+        # print(mask.shape)
+        # print('nan ratio')
+        # print(torch.sum(mask).item() / mask.shape[0] / mask.shape[2] / mask.shape[3])
+        
+        # print('photometric_losses')
+        # print(len(photometric_losses))
+        # print(len(photometric_losses[0]))
+        # print(photometric_losses[0][0].shape)
+        # print(photometric_losses[0][1].shape)
+        # print(photometric_losses[0][2].shape)
+        # print(photometric_losses[0][3].shape)
 
         # Calculate reduced photometric loss
-        loss = self.reduce_photometric_loss(photometric_losses, mask)
+        # loss = self.reduce_photometric_loss(photometric_losses, mask)
+        loss = self.reduce_photometric_loss(photometric_losses)
+        # print('reduced photometric loss')
+        # print(loss)
+
         # Include smoothness loss if requested
         if self.smooth_loss_weight > 0.0:
             loss += self.calc_smoothness_loss(inv_depths, images)
+
+        # print('after smooth loss')
+        # print(loss)
+
         # Return losses and metrics
         return {
             'loss': loss.unsqueeze(0),

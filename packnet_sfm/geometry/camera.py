@@ -196,6 +196,8 @@ class Camera(nn.Module):
         X = Xc[:, 0]
         Y = Xc[:, 1]
         Z = Xc[:, 2].clamp(min=1e-5)
+        # Xnorm = (X / Z)
+        # Ynorm = (Y / Z)
         Xnorm = 2 * (X / Z) / (W) - 1.
         Ynorm = 2 * (Y / Z) / (H) - 1.
 

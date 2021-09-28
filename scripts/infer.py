@@ -16,6 +16,11 @@ from packnet_sfm.utils.config import parse_test_file
 from packnet_sfm.utils.load import set_debug
 from packnet_sfm.utils.depth import write_depth, inv2depth, viz_inv_depth
 from packnet_sfm.utils.logging import pcolor
+from packnet_sfm.utils.rectify import to_perspective, warp_img
+
+from packnet_sfm.geometry.camera_ucm import UCMCamera
+from packnet_sfm.geometry.camera_eucm import EUCMCamera
+from packnet_sfm.geometry.camera_ds import DSCamera
 
 
 def is_image(file, ext=('.png', '.jpg',)):
@@ -85,7 +90,7 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ma
     # resized_mask = mask
     resized_mask = torch.tensor(resized_mask)
     resized_mask = resized_mask.unsqueeze(0).unsqueeze(1)
-    print(resized_mask.shape)
+    # print(resized_mask.shape)
     
     # Send image to GPU if available
     if torch.cuda.is_available():
@@ -98,7 +103,41 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ma
     # print(pred_inv_depth.shape)
 
     # apply mask
-    pred_inv_depth = pred_inv_depth * resized_mask[:,0,:,:]
+    # pred_inv_depth = pred_inv_depth * resized_mask[:,0,:,:]
+
+    # # get depth from inv_depth
+    # pred_depth=inv2depth(pred_inv_depth)
+
+    # generate recitified images
+    # ucm_I = torch.tensor([235.4,  245.1,  186.5,  132.6,  0.650]) # gt
+    # ucm_I = torch.tensor([236.1,  246.9,  178.3,  146.7,  0.635]) # learned
+    ucm_I = torch.tensor([112.5976,  93.0813,  199.6491,  195.1849,  0.5]) # omnicam 384x384
+    ucm_I = ucm_I.unsqueeze(0)
+
+    # eucm_I = torch.tensor([235.64381137951174, 245.38803860055288, 186.44431894063212, 132.64829510142745, 0.5966287792627975, 1.1122253956511319], dtype=torch.double)
+    eucm_I = torch.tensor([237.78, 247.71, 186.66, 129.09, 0.598, 1.075]) # learned
+    eucm_I = eucm_I.unsqueeze(0)
+
+    # ds_I = torch.tensor([183.9, 191.5, 186.7, 132.8, -0.208, 0.560]) # gt
+    # ds_I = torch.tensor([187.2, 195.9, 188.6, 138.9, -0.227, 0.569]) # learned euroc
+    # ds_I = torch.tensor([204.85, 179.57, 256.06, 144.57, 0.503, 0.203]) # learned gopro run_172
+    ds_I = torch.tensor([133.26, 119.56, 255.81, 143.50, 0.054, 0.387]) # learned gopro run_173
+    # ds_I = torch.tensor([125.73, 111.73, 255.43, 145.58, -0.147, 0.424]) # learned gopro run_174
+    ds_I = ds_I.unsqueeze(0)
+
+    ucm_cam = UCMCamera(I=ucm_I)
+    eucm_cam = EUCMCamera(I=eucm_I)
+    ds_cam = DSCamera(I=ds_I)
+
+    
+    rgb_np = image[0].permute(1, 2, 0).detach().cpu().numpy()
+    # print('rgb np shape')
+    # print(rgb_np.shape)
+    # rgb_np = np.moveaxis(rgb_np, 0, -1)
+    # image_np = resize(rgb_np, (384,256))
+    rectified_image = to_perspective(ds_cam, rgb_np, img_size=image_shape, f=0.25)
+    # rectified_image = to_perspective(ucm_cam, rgb_np, img_size=image_shape, f=0.25)
+
 
     if save == 'npz' or save == 'png':
         # Get depth from predicted depth map and save to different formats
@@ -106,14 +145,17 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ma
         print('Saving {} to {}'.format(
             pcolor(input_file, 'cyan', attrs=['bold']),
             pcolor(filename, 'magenta', attrs=['bold'])))
-        write_depth(filename, depth=inv2depth(pred_inv_depth))
+        # write_depth(filename, depth=inv2depth(pred_inv_depth))
+        write_depth(filename, depth=pred_inv_depth)
     else:
         # Prepare RGB image
         rgb = image[0].permute(1, 2, 0).detach().cpu().numpy() * 255
+        rectified_rgb = rectified_image * 255
         # Prepare inverse depth
         viz_pred_inv_depth = viz_inv_depth(pred_inv_depth[0]) * 255
         # Concatenate both vertically
-        image = np.concatenate([rgb, viz_pred_inv_depth], 0)
+        # image = np.concatenate([rgb, viz_pred_inv_depth, rectified_rgb], 0) # vertical
+        image = np.concatenate([rgb, viz_pred_inv_depth, rectified_rgb], 1) # horizonttal
         # Save visualization
         print('Saving {} to {}'.format(
             pcolor(input_file, 'cyan', attrs=['bold']),

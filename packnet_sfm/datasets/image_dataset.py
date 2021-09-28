@@ -114,3 +114,11 @@ class ImageDataset(Dataset):
         return sample
 
 ########################################################################################################################
+if __name__ == "__main__":
+    data_dir = '/data/datasets/omnicam'
+    image_dataset = ImageDataset(root_dir=data_dir,split='{:09}',forward_context=1, back_context=1)
+    print(len(image_dataset))
+    print(image_dataset[0].keys())
+    print(image_dataset[0]['rgb'])
+    print(image_dataset[0]['rgb_context'])
+    print(image_dataset[0]['intrinsics'])

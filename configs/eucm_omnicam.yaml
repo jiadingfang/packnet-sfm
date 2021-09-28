@@ -8,6 +8,8 @@ model:
             lr: 0.0002
         pose:
             lr: 0.0002
+        intrinsic:
+            lr: 1e-3
     scheduler:
         name: 'StepLR'
         step_size: 30
@@ -25,11 +27,11 @@ model:
 datasets:
     augmentation:
         # image_shape: (1024, 1024)
-        image_shape: (512, 512)
-        # image_shape: (384, 384)
+        # image_shape: (512, 512)
+        image_shape: (384, 384)
         # image_shape: (128, 128)
     train:
-        batch_size: 8
+        batch_size: 16
         dataset: ['Image']
         path: ['/data/datasets/omnicam']
         split: ['{:09}']
@@ -45,3 +47,9 @@ datasets:
         path: ['/data/datasets/KITTI_tiny']
         split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
+wandb:
+    dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    project: 'ucm_euroc'
+    dir: '/data/datasets/results'
+gpu:
+    idx: 1

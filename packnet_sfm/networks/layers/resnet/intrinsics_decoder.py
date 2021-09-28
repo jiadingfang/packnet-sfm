@@ -26,7 +26,8 @@ class IntrinsicsDecoder(nn.Module):
         self.num_ch_dec = np.array([16, 32, 64, 128, 256])
 
         # camera intrinsic parameter as a vector
-        self.intrinsic_vector = nn.Parameter(torch.zeros(4))
+        # self.intrinsic_vector = nn.Parameter(torch.zeros(4))
+        self.intrinsic_vector = nn.Parameter(-torch.ones(4))
 
         # decoder
         self.convs = OrderedDict()
