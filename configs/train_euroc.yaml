@@ -1,0 +1,75 @@
+
+arch:
+    max_epochs: 50
+model:
+    name: 'GenericSelfSupModel'
+    optimizer:
+        name: 'Adam'
+        depth:
+            lr: 0.0002
+        pose:
+            lr: 0.0002
+    scheduler:
+        name: 'StepLR'
+        step_size: 30
+        gamma: 0.5
+    depth_net:
+        name: 'RaySurfaceResNet'
+        version: '18pt'
+    pose_net:
+        name: 'PoseResNet'
+        version: '18pt'
+    params:
+        crop: 'garg'
+        min_depth: 0.0
+        max_depth: 80.0
+datasets:
+    augmentation:
+        # image_shape: (752, 480)
+        # image_shape: (256, 384)
+        image_shape: (128, 192)
+    train:
+        batch_size: 1
+        dataset: ['EUROC']
+        # path: ['/data/datasets/euroc_cam/cam0']
+        path: ['/data/datasets/euroc_MH/cam0']
+        # path: ['/data/datasets/euroc/MH_01_easy/mav0/cam0']
+        # path: ['/data/datasets/euroc/MH_02_easy/mav0/cam0']
+        # path: ['/data/datasets/euroc/MH_03_medium/mav0/cam0']
+        # path: ['/data/datasets/euroc/MH_04_difficult/mav0/cam0']
+        # path: ['/data/datasets/euroc/MH_05_difficult/mav0/cam0']
+        # path: ['/data/datasets/euroc/V1_01_easy/mav0/cam0']
+        # path: ['/data/datasets/euroc/V1_02_medium/mav0/cam0']
+        # path: ['/data/datasets/euroc/V1_03_difficult/mav0/cam0']
+        # path: ['/data/datasets/euroc/V2_01_easy/mav0/cam0']
+        # path: ['/data/datasets/euroc/V2_02_medium/mav0/cam0']
+        # path: ['/data/datasets/euroc/V2_03_difficult/mav0/cam0']
+        # path: ['/data/datasets/euroc_tiny/V1_01_easy/mav0']
+        # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0']
+        forward_context: 49999872
+        back_context: 50000128
+        # forward_context: [249999872]  # for has_depth dataset
+        # back_context: [250000128]     # for has_depth dataset
+        split: ['{:19}']
+        depth_type: ['vicon']
+        # repeat: [1]
+        repeat: [1]
+    validation:
+        dataset: ['EUROC']
+        # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0/']
+        path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0/']
+        split: ['{:19}']
+        depth_type: ['vicon']
+    test:
+        dataset: ['EUROC']
+        # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0']
+        path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0']
+        split: ['{:19}']
+        depth_type: ['vicon']
+wandb:
+    # dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    # dry_run: True
+    # name: 'euroc-tiny-test-run-1'/
+    project: 'ucm_euroc'
+    # project: 'my-test-project'
+    dir: '/data/datasets/results'
