@@ -19,7 +19,7 @@ cfg.arch.max_epochs = 50                # Maximum number of epochs
 ### CHECKPOINT
 ########################################################################################################################
 cfg.checkpoint = CN()
-cfg.checkpoint.filepath = ''            # Checkpoint filepath to save data
+cfg.checkpoint.filepath = '/data/datasets/ckpts/'            # Checkpoint filepath to save data
 cfg.checkpoint.save_top_k = 5           # Number of best models to save
 cfg.checkpoint.monitor = 'loss'         # Metric to monitor for logging
 cfg.checkpoint.monitor_index = 0        # Dataset index for the metric to monitor
@@ -63,6 +63,9 @@ cfg.model.optimizer.depth.weight_decay = 0.0    # Dept weight decay
 cfg.model.optimizer.pose = CN()
 cfg.model.optimizer.pose.lr = 0.0002            # Pose learning rate
 cfg.model.optimizer.pose.weight_decay = 0.0     # Pose weight decay
+cfg.model.optimizer.intrinsic = CN()
+cfg.model.optimizer.intrinsic.lr = 0.005            # intrinsic learning rate
+cfg.model.optimizer.intrinsic.weight_decay = 0     # intrinsic weight decay
 ########################################################################################################################
 ### MODEL.SCHEDULER
 ########################################################################################################################
@@ -83,7 +86,7 @@ cfg.model.params.max_depth = 80.0       # Maximum depth value to evaluate
 ########################################################################################################################
 cfg.model.loss = CN()
 #
-cfg.model.loss.num_scales = 4                   # Number of inverse depth scales to use
+cfg.model.loss.num_scales = 1                   # Number of inverse depth scales to use
 cfg.model.loss.progressive_scaling = 0.0        # Training percentage to decay number of scales
 cfg.model.loss.flip_lr_prob = 0.5               # Probablity of horizontal flippping
 cfg.model.loss.rotation_mode = 'euler'          # Rotation mode
@@ -103,7 +106,7 @@ cfg.model.loss.automask_loss = True             # Automasking to remove static p
 cfg.model.loss.velocity_loss_weight = 0.1       # Velocity supervision loss weight
 #
 cfg.model.loss.supervised_method = 'sparse-l1'  # Method for depth supervision
-cfg.model.loss.supervised_num_scales = 4        # Number of scales for supervised learning
+cfg.model.loss.supervised_num_scales = 1        # Number of scales for supervised learning
 cfg.model.loss.supervised_loss_weight = 0.9     # Supervised loss weight
 ########################################################################################################################
 ### MODEL.DEPTH_NET
@@ -131,14 +134,16 @@ cfg.datasets = CN()
 cfg.datasets.augmentation = CN()
 cfg.datasets.augmentation.image_shape = (192, 640)              # Image shape
 cfg.datasets.augmentation.jittering = (0.2, 0.2, 0.2, 0.05)     # Color jittering values
+cfg.datasets.augmentation.random_hflip = True
+cfg.datasets.augmentation.random_vflip = True
 ########################################################################################################################
 ### DATASETS.TRAIN
 ########################################################################################################################
 cfg.datasets.train = CN()
 cfg.datasets.train.batch_size = 8                   # Training batch size
 cfg.datasets.train.num_workers = 16                 # Training number of workers
-cfg.datasets.train.back_context = 1                 # Training backward context
-cfg.datasets.train.forward_context = 1              # Training forward context
+cfg.datasets.train.back_context = [1]                 # Training backward context
+cfg.datasets.train.forward_context = [1]              # Training forward context
 cfg.datasets.train.dataset = []                     # Training dataset
 cfg.datasets.train.path = []                        # Training data path
 cfg.datasets.train.split = []                       # Training split
@@ -152,8 +157,8 @@ cfg.datasets.train.num_logs = 5                     # Number of training images 
 cfg.datasets.validation = CN()
 cfg.datasets.validation.batch_size = 1              # Validation batch size
 cfg.datasets.validation.num_workers = 8             # Validation number of workers
-cfg.datasets.validation.back_context = 0            # Validation backward context
-cfg.datasets.validation.forward_context = 0         # Validation forward contxt
+cfg.datasets.validation.back_context = [0]            # Validation backward context
+cfg.datasets.validation.forward_context = [0]         # Validation forward contxt
 cfg.datasets.validation.dataset = []                # Validation dataset
 cfg.datasets.validation.path = []                   # Validation data path
 cfg.datasets.validation.split = []                  # Validation split
@@ -166,8 +171,8 @@ cfg.datasets.validation.num_logs = 5                # Number of validation image
 cfg.datasets.test = CN()
 cfg.datasets.test.batch_size = 1                    # Test batch size
 cfg.datasets.test.num_workers = 8                   # Test number of workers
-cfg.datasets.test.back_context = 0                  # Test backward context
-cfg.datasets.test.forward_context = 0               # Test forward context
+cfg.datasets.test.back_context = [0]                  # Test backward context
+cfg.datasets.test.forward_context = [0]               # Test forward context
 cfg.datasets.test.dataset = []                      # Test dataset
 cfg.datasets.test.path = []                         # Test data path
 cfg.datasets.test.split = []                        # Test split
@@ -183,7 +188,6 @@ cfg.wandb.url = ''              # Wandb URL
 cfg.checkpoint.s3_url = ''      # s3 URL
 cfg.save.pretrained = ''        # Pretrained checkpoint
 cfg.prepared = False            # Prepared flag
-########################################################################################################################
 
 def get_cfg_defaults():
     return cfg.clone()

@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 import random
+import torch
 import torchvision.transforms as transforms
 from PIL import Image
 
@@ -236,4 +237,51 @@ def colorjitter_sample(sample, parameters, prob=1.0):
 
 ########################################################################################################################
 
+def random_hflip_sample(sample, prob=0.5):
+    hflipper = transforms.RandomHorizontalFlip(p=1) # make a determined hflip
+
+    p = torch.rand(1) # make a guess
+    if p < prob:
+        flipper = transforms.Compose([])
+    else:
+        flipper = transforms.Compose([hflipper])
+
+    # Flip single items
+    for key in filter_dict(sample, [
+        'rgb'
+    ]):
+        sample[key] = flipper(sample[key])
+    # Flip lists
+    for key in filter_dict(sample, [
+        'rgb_context'
+    ]):
+        sample[key] = [flipper(k) for k in sample[key]]
+    # Return flipped sample
+    return sample
+
+########################################################################################################################
+
+def random_vflip_sample(sample, prob=0.5):
+    vflipper = transforms.RandomVerticalFlip(p=1) # make a determined vflip
+
+    p = torch.rand(1) # make a guess
+    if p < prob:
+        flipper = transforms.Compose([])
+    else:
+        flipper = transforms.Compose([vflipper])
+
+    # Flip single items
+    for key in filter_dict(sample, [
+        'rgb'
+    ]):
+        sample[key] = flipper(sample[key])
+    # Flip lists
+    for key in filter_dict(sample, [
+        'rgb_context'
+    ]):
+        sample[key] = [flipper(k) for k in sample[key]]
+    # Return flipped sample
+    return sample
+
+########################################################################################################################
 

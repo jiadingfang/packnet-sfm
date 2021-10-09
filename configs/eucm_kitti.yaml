@@ -1,0 +1,49 @@
+arch:
+    max_epochs: 50
+model:
+    name: 'EUCMSelfSupModel'
+    optimizer:
+        name: 'Adam'
+        depth:
+            lr: 0.0002
+        pose:
+            lr: 0.0002
+        intrinsic:
+            lr: 5e-3
+    scheduler:
+        name: 'StepLR'
+        step_size: 30
+        gamma: 0.5
+    depth_net:
+        name: 'EUCMResNet'
+        version: '18pt'
+    pose_net:
+        name: 'PoseResNet'
+        version: '18pt'
+    params:
+        crop: 'garg'
+        min_depth: 0.0
+        max_depth: 80.0
+datasets:
+    augmentation:
+        image_shape: (192, 640)
+    train:
+        batch_size: 16
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_raw']
+        split: ['data_splits/eigen_zhou_files.txt']
+        depth_type: ['velodyne']
+        repeat: [2]
+    validation:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_raw']
+        split: ['data_splits/eigen_val_files.txt',
+                'data_splits/eigen_test_files.txt']
+        forward_context: [0, 0]
+        back_context: [0, 0]
+        depth_type: ['velodyne']
+    test:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_raw']
+        split: ['data_splits/eigen_test_files.txt']
+        depth_type: ['velodyne']

@@ -1,0 +1,56 @@
+arch:
+    max_epochs: 50
+model:
+    name: 'DSSelfSupModel'
+    optimizer:
+        name: 'Adam'
+        depth:
+            lr: 0.0002
+        pose:
+            lr: 0.0002
+        intrinsic:
+            lr: 1e-3
+    scheduler:
+        name: 'StepLR'
+        step_size: 30
+        gamma: 0.5
+    depth_net:
+        name: 'DSResNet'
+        version: '18pt'
+    pose_net:
+        name: 'PoseResNet'
+        version: '18pt'
+    params:
+        crop: 'garg'
+        min_depth: 0.0
+        max_depth: 80.0
+datasets:
+    augmentation:
+        # image_shape: (480, 752)
+        image_shape: (256, 384)
+        random_hflip: True
+        random_vflip: True
+    train:
+        batch_size: 16
+        dataset: ['EUROC']
+        path: ['/data/datasets/euroc_cam/cam0']
+        # path: ['/data/datasets/euroc_MH/cam0']
+        forward_context: [49999872]
+        back_context: [50000128]
+        # forward_context: [249999872]  # for has_depth dataset
+        # back_context: [250000128]     # for has_depth dataset
+        split: ['{:19}']
+        depth_type: ['vicon']
+        repeat: [1]
+    validation:
+        dataset: ['EUROC']
+        # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0/']
+        path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0/']
+        split: ['{:19}']
+        depth_type: ['vicon']
+    test:
+        dataset: ['EUROC']
+        # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0']
+        path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0']
+        split: ['{:19}']
+        depth_type: ['vicon']

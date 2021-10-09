@@ -34,6 +34,7 @@ def parse_args():
     parser.add_argument('--half', action="store_true", help='Use half precision (fp16)')
     parser.add_argument('--save', type=str, choices=['npz', 'png'], default=None,
                         help='Save format (npz or png). Default is None (no depth map is saved).')
+    parser.add_argument('--gray', action="store_true", help='Use if the input images are gray-scale')
     args = parser.parse_args()
     assert args.checkpoint.endswith('.ckpt'), \
         'You need to provide a .ckpt file as checkpoint'
@@ -46,7 +47,7 @@ def parse_args():
 
 
 @torch.no_grad()
-def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, half, save):
+def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, half, save, gray):
     """
     Process a single input file to produce and save visualization
 
@@ -64,6 +65,8 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ha
         use half precision (fp16)
     save: str
         Save format (npz or png)
+    gray: bool
+        the input images are gray scale
     """
     if not is_image(output_file):
         # If not an image, assume it's a folder and append the input name
@@ -78,6 +81,12 @@ def infer_and_save_depth(input_file, output_file, model_wrapper, image_shape, ha
     # Resize and to tensor
     image = resize_image(image, image_shape)
     image = to_tensor(image).unsqueeze(0)
+
+    # deal with gray scale images
+    if gray:
+        gray_image = image.detach().cpu().numpy()
+        rgb_np = np.tile(gray_image, (1,3,1,1))
+        image = torch.tensor(rgb_np) # artificailly make gray image 3 channels
 
     # Send image to GPU if available
     if torch.cuda.is_available():
@@ -152,7 +161,7 @@ def main(args):
     # Process each file
     for fn in files[rank()::world_size()]:
         infer_and_save_depth(
-            fn, args.output, model_wrapper, image_shape, args.half, args.save)
+            fn, args.output, model_wrapper, image_shape, args.half, args.save, args.gray)
 
 
 if __name__ == '__main__':

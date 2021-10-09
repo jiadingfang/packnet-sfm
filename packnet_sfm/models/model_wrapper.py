@@ -131,13 +131,24 @@ class ModelWrapper(torch.nn.Module):
         params = []
         # Load optimizer
         optimizer = getattr(torch.optim, self.config.model.optimizer.name)
+        
         # Depth optimizer
         if self.depth_net is not None:
             params.append({
-                'name': 'Depth',
-                'params': self.depth_net.parameters(),
+                'name': 'Depth Encoder',
+                # 'params': self.depth_net.parameters(),
+                'params': self.depth_net.encoder.parameters(),
                 **filter_args(optimizer, self.config.model.optimizer.depth)
             })
+
+        if self.depth_net is not None:
+            params.append({
+                'name': 'Depth Decoder',
+                # 'params': self.depth_net.parameters(),
+                'params': self.depth_net.decoder.parameters() ,
+                **filter_args(optimizer, self.config.model.optimizer.depth)
+            })
+
         # Pose optimizer
         if self.pose_net is not None:
             params.append({
@@ -145,6 +156,15 @@ class ModelWrapper(torch.nn.Module):
                 'params': self.pose_net.parameters(),
                 **filter_args(optimizer, self.config.model.optimizer.pose)
             })
+
+        # Intrinsic optimizer
+        if self.depth_net.intrinsic_decoder is not None:
+            params.append({
+                'name': 'Intrinsic',
+                'params': self.depth_net.intrinsic_decoder.parameters(),
+                **filter_args(optimizer, self.config.model.optimizer.intrinsic)
+            })
+
         # Create optimizer with parameters
         optimizer = optimizer(params)
 
@@ -497,8 +517,6 @@ def setup_dataset(config, mode, requirements, **kwargs):
 
     # Global shared dataset arguments
     dataset_args = {
-        'back_context': config.back_context,
-        'forward_context': config.forward_context,
         'data_transform': get_transforms(mode, **kwargs)
     }
 
@@ -509,6 +527,8 @@ def setup_dataset(config, mode, requirements, **kwargs):
 
         # Individual shared dataset arguments
         dataset_args_i = {
+            'back_context': config.back_context[i],
+            'forward_context': config.forward_context[i],
             'depth_type': config.depth_type[i] if requirements['gt_depth'] else None,
             'with_pose': requirements['gt_pose'],
         }
@@ -541,6 +561,7 @@ def setup_dataset(config, mode, requirements, **kwargs):
             dataset = EUROCDataset(
                 config.path[i], config.split[i],
                 **dataset_args, **dataset_args_i,
+                cameras=config.cameras[i],
             )
         else:
             ValueError('Unknown dataset %d' % config.dataset[i])
