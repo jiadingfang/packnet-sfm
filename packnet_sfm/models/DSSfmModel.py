@@ -114,8 +114,8 @@ class DSSfmModel(SfmModel):
         # Generate pose predictions if available
         pose = None
         if 'rgb_context' in batch and self.pose_net is not None:
-            pose = self.compute_poses(batch['rgb'],
-                                      batch['rgb_context'])
+            pose = self.compute_poses(batch['rgb_original'],
+                                      batch['rgb_context_original'])
         # Return output dictionary
         return {
             'inv_depths': inv_depths,

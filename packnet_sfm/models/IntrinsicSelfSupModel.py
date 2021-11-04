@@ -5,6 +5,7 @@ import torch
 from packnet_sfm.models.IntrinsicSfmModel import IntrinsicSfmModel
 from packnet_sfm.losses.multiview_photometric_loss import MultiViewPhotometricLoss
 from packnet_sfm.models.model_utils import merge_outputs
+from packnet_sfm.geometry.pose import Pose
 
 
 class IntrinsicSelfSupModel(IntrinsicSfmModel):
@@ -92,29 +93,45 @@ class IntrinsicSelfSupModel(IntrinsicSfmModel):
         self.I_dict = {'fx': I[0,0].item(), 'fy': I[1,1].item(), 'cx': I[0,2].item(), 'cy': I[1,2].item()}
         batch_I = output['intrinsics']
 
-        if self.counter % 100 == 0:
-            print()
-            print(output['intrinsics'][0])
-            print(batch['intrinsics'][0])
-
         self.counter += 1
-        # print('step {}'.format(self.counter))
 
         if not self.training:
             # If not training, no need for self-supervised loss
             return output
         else:
+            target_pose = Pose(batch['pose'])
+            context_poses = [Pose(context_pose_mat) for context_pose_mat in batch['pose_context']]
+
             # Otherwise, calculate self-supervised loss
 
-            self_sup_output = self.self_supervised_loss(
-                batch['rgb_original'], batch['rgb_context_original'],
-                output['inv_depths'], output['poses'], batch_I,
-                return_logs=return_logs, progress=progress)
+            # self_sup_output = self.self_supervised_loss(
+            #     batch['rgb_original'], batch['rgb_context_original'],
+            #     output['inv_depths'], output['poses'], batch_I,
+            #     return_logs=return_logs, progress=progress)
 
             # self_sup_output = self.self_supervised_loss(
             #     batch['rgb_original'], batch['rgb_context_original'],
             #     output['inv_depths'], output['poses'], batch['intrinsics'],
             #     return_logs=return_logs, progress=progress)
+
+            # self_sup_output = self.self_supervised_loss(
+            #     batch['rgb_original'], batch['rgb_context_original'],
+            #     output['inv_depths'], context_poses, batch_I,
+            #     return_logs=return_logs, progress=progress)
+
+            # self_sup_output = self.self_supervised_loss(
+            #     batch['rgb_original'], batch['rgb_context_original'],
+            #     output['inv_depths'], context_poses, batch['intrinsics'],
+            #     return_logs=return_logs, progress=progress)
+
+            if self.counter % 100 == 0:
+                print()
+                print(I)
+
+            self_sup_output = self.self_supervised_loss(
+                batch['rgb'], batch['rgb_context'],
+                output['inv_depths'], output['poses'], batch_I,
+                return_logs=return_logs, progress=progress)
 
             # Return loss and metrics
             return {

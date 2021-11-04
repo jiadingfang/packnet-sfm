@@ -1,0 +1,82 @@
+arch:
+    max_epochs: 50
+model:
+    name: 'IntrinsicSelfSupModel'
+    optimizer:
+        name: 'Adam'
+        depth:
+            lr: 0.0002
+        pose:
+            lr: 0.0002
+        intrinsic:
+            lr: 5e-3
+    scheduler:
+        name: 'StepLR'
+        step_size: 30
+        gamma: 0.5
+    depth_net:
+        name: 'IntrinsicsResNet'
+        version: '18pt'
+    pose_net:
+        name: 'PoseResNet'
+        version: '18pt'
+    params:
+        crop: 'garg'
+        min_depth: 0.0
+        max_depth: 80.0
+
+datasets:
+    augmentation:
+        # image_shape: (128, 128)
+        image_shape: (192, 640)
+        random_hflip: False
+        random_vflip: False
+        center_crop: False
+    train:
+        batch_size: 1
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
+        depth_type: ['velodyne']
+        repeat: [100]
+    validation:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
+        depth_type: ['velodyne']
+    test:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
+        depth_type: ['velodyne']
+
+# datasets:
+#     augmentation:
+#         image_shape: (192, 640)
+#     train:
+#         batch_size: 16
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_zhou_files.txt']
+#         depth_type: ['velodyne']
+#         repeat: [1]
+#     validation:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_val_files.txt',
+#                 'data_splits/eigen_test_files.txt']
+#         forward_context: [0, 0]
+#         back_context: [0, 0]
+#         depth_type: ['velodyne']
+#     test:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_test_files.txt']
+#         depth_type: ['velodyne']
+wandb:
+    # dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    dry_run: True
+    project: 'kitti'
+    dir: '/data/datasets/results'
+gpu:
+    idx: 1

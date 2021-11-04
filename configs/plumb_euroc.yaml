@@ -1,7 +1,7 @@
 arch:
     max_epochs: 50
 model:
-    name: 'UCMSelfSupModel'
+    name: 'PlumbSelfSupModel'
     optimizer:
         name: 'Adam'
         depth:
@@ -15,12 +15,10 @@ model:
         step_size: 30
         gamma: 0.5
     depth_net:
-        # name: 'EUROCUCMResNet'
-        name: 'UCMResNet'
+        name: 'PlumbResNet'
         version: '18pt'
         # version: '18n'
     pose_net:
-        # name: 'EUROCPoseResNet'
         name: 'PoseResNet'
         version: '18pt'
         # version: '18n'
@@ -32,9 +30,9 @@ datasets:
     augmentation:
         # image_shape: (480, 752)
         image_shape: (256, 384)
-        random_hflip: False
-        random_vflip: False
-        random_crop: True
+        random_hflip: True
+        random_vflip: True
+        center_crop: False
     train:
         batch_size: 16
         dataset: ['EUROC']
@@ -53,27 +51,24 @@ datasets:
         # path: ['/data/datasets/euroc/V2_03_difficult/mav0/cam0']
         # path: ['/data/datasets/euroc_tiny/V1_01_easy/mav0']
         # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0']
-        # path: ['/data/datasets/cam_april/mav0']
-
         forward_context: [49999872]
         back_context: [50000128]
         # forward_context: [249999872]  # for has_depth dataset
         # back_context: [250000128]     # for has_depth dataset
         split: ['{:19}']
         depth_type: ['vicon']
+        # repeat: [1]
         repeat: [1]
     validation:
         dataset: ['EUROC']
         # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0/']
         path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0/']
-        # path: ['/data/datasets/cam_april/mav0']
         split: ['{:19}']
         depth_type: ['vicon']
     test:
         dataset: ['EUROC']
         # path: ['/data/datasets/euroc/V1_01_easy_has_depth/mav0']
         path: ['/data/datasets/euroc/V2_01_easy_has_depth/mav0']
-        # path: ['/data/datasets/cam_april/mav0']
         split: ['{:19}']
         depth_type: ['vicon']
 wandb:

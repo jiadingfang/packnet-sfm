@@ -69,9 +69,9 @@ class HorovodTrainer(BaseTrainer):
         #         print(param.data)
 
         # for name, param in module.named_parameters():
-        #     if ('depth' in name or 'pose' in name) and ('intrinsic' not in name):
-        #         print(name)
-        #     print(param.requires_grad)
+            # if ('depth' in name or 'pose' in name) and ('intrinsic' not in name):
+            # print(name)
+            # print(param.requires_grad)
 
 
         # Create distributed optimizer
@@ -87,15 +87,15 @@ class HorovodTrainer(BaseTrainer):
         # Epoch loop
         for epoch in range(module.current_epoch, self.max_epochs):
             
-            # Freeze intrinsic vector in first 10 epochs
-            if epoch < 50:
-                for name, param in module.named_parameters():
-                    if param.requires_grad and 'intrinsic_vector' in name:
-                        param.requires_grad = False
-            else:
-                for name, param in module.named_parameters():
-                    if not param.requires_grad and 'intrinsic_vector' in name:
-                        param.requires_grad = True
+            # # Freeze intrinsic vector in first 10 epochs
+            # if epoch < 50:
+            #     for name, param in module.named_parameters():
+            #         if param.requires_grad and 'intrinsic_vector' in name:
+            #             param.requires_grad = False
+            # else:
+            #     for name, param in module.named_parameters():
+            #         if not param.requires_grad and 'intrinsic_vector' in name:
+            #             param.requires_grad = True
 
             # Freeze depth and pose networks after 50 epochs
             # if epoch >= 49:
@@ -210,6 +210,8 @@ class HorovodTrainer(BaseTrainer):
             #         print(param.grad)
             #         print('requires grad')
             #         print(param.requires_grad)
+            #         print('loss')
+            #         print(output['loss'])
 
             
             # Append output to list of outputs

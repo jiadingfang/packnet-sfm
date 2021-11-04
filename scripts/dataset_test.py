@@ -6,29 +6,29 @@ from collections import defaultdict
 # data_dir = '/data/datasets/euroc/V2_03_difficult/mav0/cam0/data'
 
 data_dir_list= []
-# data_dir_list.append('/data/datasets/euroc/MH_01_easy/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/MH_02_easy/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/MH_03_medium/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/MH_04_difficult/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/MH_05_difficult/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V1_01_easy/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V1_02_medium/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V1_03_difficult/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V2_01_easy/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V2_02_medium/mav0/cam0/data')
-# data_dir_list.append('/data/datasets/euroc/V2_03_difficult/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/MH_01_easy/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/MH_02_easy/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/MH_03_medium/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/MH_04_difficult/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/MH_05_difficult/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V1_01_easy/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V1_02_medium/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V1_03_difficult/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V2_01_easy/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V2_02_medium/mav0/cam0/data')
+data_dir_list.append('/data/datasets/euroc/V2_03_difficult/mav0/cam0/data')
 
-data_dir_list.append('/data/datasets/euroc/MH_01_easy/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/MH_02_easy/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/MH_03_medium/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/MH_04_difficult/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/MH_05_difficult/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V1_01_easy/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V1_02_medium/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V1_03_difficult/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V2_01_easy/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V2_02_medium/mav0/cam1/data')
-data_dir_list.append('/data/datasets/euroc/V2_03_difficult/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/MH_01_easy/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/MH_02_easy/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/MH_03_medium/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/MH_04_difficult/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/MH_05_difficult/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V1_01_easy/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V1_02_medium/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V1_03_difficult/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V2_01_easy/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V2_02_medium/mav0/cam1/data')
+# data_dir_list.append('/data/datasets/euroc/V2_03_difficult/mav0/cam1/data')
 
 for data_dir in data_dir_list:
     file_list = os.listdir(data_dir)
@@ -38,6 +38,7 @@ for data_dir in data_dir_list:
     diff_list = []
     for i in range(len(sorted_idx_list) - 1):
         diff_list.append( sorted_idx_list[i+1] - sorted_idx_list[i] )
+        print(diff_list)
 
     unique_list = []
     for x in diff_list:

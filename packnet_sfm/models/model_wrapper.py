@@ -6,6 +6,7 @@ import time
 import random
 import numpy as np
 import torch
+import torch.nn as nn
 from torch.utils.data import ConcatDataset, DataLoader
 
 from packnet_sfm.datasets.transforms import get_transforms
@@ -62,6 +63,23 @@ class ModelWrapper(torch.nn.Module):
             validation_requirements = {'gt_depth': True, 'gt_pose': False}
             test_requirements = validation_requirements
             self.prepare_datasets(validation_requirements, test_requirements)
+
+        #     # add pose tensors
+        #     repeat = self.config.datasets.train.repeat[0]
+        #     train_dataset_length = len(self.train_dataset[0])
+        #     identity_tensor = torch.tensor([1.0, 1.0, 1.0, 0.0, 0.0, 0.0])
+        #     self.pose_tensors = nn.Parameter(torch.stack([identity_tensor for _ in range(int(train_dataset_length / repeat))], dim=1))
+        #     print('dataset length')
+        #     print(train_dataset_length)
+        #     print('repeat')
+        #     print(repeat)
+        #     # for i in range(int(len(self.train_dataset[0]) / int(repeat))):
+        #     #     # print(self.train_dataset[0][i].keys())
+        #     #     idx = self.train_dataset[0][i]['idx']
+        #     #     # print(idx)
+        #     #     self.pose_tensors[idx] = nn.Parameter(torch.tensor([1.0, 1.0, 1.0, 0.0, 0.0, 0.0]))
+        #     print(self.pose_tensors)
+        #     print(self.pose_tensors[0])
 
         # Preparations done
         self.config.prepared = True
@@ -587,6 +605,13 @@ def setup_dataset(config, mode, requirements, **kwargs):
                 config.path[i], config.split[i],
                 **dataset_args, **dataset_args_i,
             )
+        # Gray Image dataset
+        elif config.dataset[i] == 'GrayImage':
+            from packnet_sfm.datasets.gray_image_dataset import GrayImageDataset
+            dataset = GrayImageDataset(
+                config.path[i], config.split[i],
+                **dataset_args, **dataset_args_i,
+            )
         # EUROC dataset
         elif config.dataset[i] == 'EUROC':
             from packnet_sfm.datasets.euroc_dataset import EUROCDataset
@@ -598,14 +623,6 @@ def setup_dataset(config, mode, requirements, **kwargs):
         # PD dataset
         elif config.dataset[i] == 'PD':
             from packnet_sfm.datasets.pd_euroc_dataset import PDEUROCDataset
-            # print('config.path[i]')
-            # print(config.path[i])
-            # print('config.split[i]')
-            # print(config.split[i])
-            # print('dataset_args')
-            # print(dataset_args)
-            # print('dataset_args_i')
-            # print(dataset_args_i)
             dataset = PDEUROCDataset(
                 config.path[i], config.split[i],
                 **dataset_args, **dataset_args_i,

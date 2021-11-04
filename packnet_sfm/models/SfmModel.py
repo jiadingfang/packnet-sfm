@@ -42,9 +42,13 @@ class SfmModel(nn.Module):
                 'depth_net': True,  # Depth network required
                 'pose_net': True,   # Pose network required
             }
+        # self._train_requirements = {
+        #         'gt_depth': False,  # No ground-truth depth required
+        #         'gt_pose': False,   # No ground-truth pose required
+        #     }
         self._train_requirements = {
-                'gt_depth': False,  # No ground-truth depth required
-                'gt_pose': False,   # No ground-truth pose required
+                'gt_depth': True,  # ground-truth depth required
+                'gt_pose': True,   # ground-truth pose required
             }
 
     @property
@@ -138,8 +142,8 @@ class SfmModel(nn.Module):
         # Generate pose predictions if available
         pose = None
         if 'rgb_context' in batch and self.pose_net is not None:
-            pose = self.compute_poses(batch['rgb'],
-                                      batch['rgb_context'])
+            pose = self.compute_poses(batch['rgb_original'],
+                                      batch['rgb_context_original'])
         # Return output dictionary
         return {
             'inv_depths': inv_depths,

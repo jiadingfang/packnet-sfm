@@ -139,13 +139,15 @@ class EUCMSelfSupModel(EUCMSfmModel):
             return output
         else:
             # Otherwise, calculate self-supervised loss
+            # self_sup_output = self.self_supervised_loss(
+            #     batch['rgb_original'], batch['rgb_context_original'],
+            #     output['inv_depths'], output['poses'], batch_I,
+            #     return_logs=return_logs, progress=progress)
+
             self_sup_output = self.self_supervised_loss(
-                batch['rgb_original'], batch['rgb_context_original'],
+                batch['rgb'], batch['rgb_context'],
                 output['inv_depths'], output['poses'], batch_I,
                 return_logs=return_logs, progress=progress)
-
-            # print(output)
-            # print(self_sup_output)
             
             # Return loss and metrics
             return {

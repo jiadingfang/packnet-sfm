@@ -7,7 +7,7 @@ from packnet_sfm.utils.misc import make_list
 from packnet_sfm.models.SfmModel import SfmModel
 import torch.nn.functional as F
 
-class UCMSfmModel(SfmModel):
+class PlumbSfmModel(SfmModel):
     """
     Model class encapsulating a pose and depth networks.
 

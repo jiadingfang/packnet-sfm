@@ -30,7 +30,7 @@ model:
 #         # image_shape: (128, 128)
 #         image_shape: (192, 640)
 #     train:
-#         batch_size: 1
+#         batch_size: 4
 #         dataset: ['KITTI']
 #         path: ['/data/datasets/KITTI_tiny']
 #         split: ['kitti_tiny.txt']
@@ -71,8 +71,9 @@ datasets:
         split: ['data_splits/eigen_test_files.txt']
         depth_type: ['velodyne']
 wandb:
-    dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    # dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    dry_run: True
     project: 'kitti'
     dir: '/data/datasets/results'
 gpu:
-    idx: 0
+    idx: 1

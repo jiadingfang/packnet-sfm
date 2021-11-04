@@ -1,7 +1,7 @@
 arch:
     max_epochs: 50
 model:
-    name: 'UCMSelfSupModel'
+    name: 'PlumbSelfSupModel'
     optimizer:
         name: 'Adam'
         depth:
@@ -13,7 +13,7 @@ model:
         step_size: 30
         gamma: 0.5
     depth_net:
-        name: 'UCMResNet'
+        name: 'PlumbResNet'
         version: '18pt'
     pose_net:
         name: 'PoseResNet'
@@ -22,15 +22,32 @@ model:
         crop: 'garg'
         min_depth: 0.0
         max_depth: 80.0
+# datasets:
+#     augmentation:
+#         # image_shape: (128, 128)
+#         image_shape: (192, 640)
+    # train:
+    #     batch_size: 1
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_tiny']
+    #     split: ['kitti_tiny.txt']
+    #     depth_type: ['velodyne']
+    #     repeat: [100]
+    # validation:
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_tiny']
+    #     split: ['kitti_tiny.txt']
+    #     depth_type: ['velodyne']
+    #     forward_context: [0, 0]
+    #     back_context: [0, 0]
+    # test:
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_tiny']
+    #     split: ['kitti_tiny.txt']
+    #     depth_type: ['velodyne']
 datasets:
     augmentation:
         image_shape: (192, 640)
-        # image_shape: (192, 320)
-        jittering: (0.2, 0.2, 0.2, 0.05)
-        random_hflip: False
-        random_vflip: False
-        random_crop: True
-        # random_crop: False
     train:
         batch_size: 16
         dataset: ['KITTI']
@@ -51,27 +68,9 @@ datasets:
         path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_test_files.txt']
         depth_type: ['velodyne']
-    # train:
-    #     batch_size: 1
-    #     dataset: ['KITTI']
-    #     path: ['/data/datasets/KITTI_tiny']
-    #     split: ['kitti_tiny.txt']
-    #     depth_type: ['velodyne']
-    #     repeat: [100]
-    # validation:
-    #     dataset: ['KITTI']
-    #     path: ['/data/datasets/KITTI_tiny']
-    #     split: ['kitti_tiny.txt']
-    #     depth_type: ['velodyne']
-    # test:
-    #     dataset: ['KITTI']
-    #     path: ['/data/datasets/KITTI_tiny']
-    #     split: ['kitti_tiny.txt']
-    #     depth_type: ['velodyne']
 wandb:
-    # dry_run: True                   # False means using wandb logging online, True means no wandb logging
-    dry_run: False
-    project: 'ucm_euroc'
+    dry_run: False                   # False means using wandb logging online, True means no wandb logging
+    project: 'kitti'
     dir: '/data/datasets/results'
 gpu:
-    idx: 3
+    idx: 0

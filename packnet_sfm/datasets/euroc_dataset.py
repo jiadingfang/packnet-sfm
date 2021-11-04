@@ -164,18 +164,22 @@ class EUROCDataset(Dataset):
         return sample
 
 ########################################################################################################################
-# if __name__ == "__main__":
-#     data_dir = '/data/datasets/euroc/V1_01_easy_has_depth/mav0'
-#     euroc_dataset = EUROCDataset(root_dir=data_dir,split='{:09}',depth_type='vicon',
-#                                 forward_context=249999872,back_context=250000128, 
-#                                 cameras=['cam0'])
-#     print(len(euroc_dataset))
-#     print(euroc_dataset[0].keys())
-#     print(euroc_dataset[0]['rgb'])
-#     print(euroc_dataset[0]['rgb_context'])
-#     print(euroc_dataset[0]['intrinsics'].shape)
-#     print(euroc_dataset[0]['intrinsic_type'])
-#     print(euroc_dataset[0]['depth'].shape)
+if __name__ == "__main__":
+    data_dir = '/data/datasets/euroc/V1_01_easy_has_depth/mav0'
+    euroc_dataset = EUROCDataset(root_dir=data_dir,split='{:09}',depth_type='vicon',
+                                forward_context=249999872,back_context=250000128, 
+                                cameras=['cam0'])
+    print(len(euroc_dataset))
+    for i in range(10):
+        # print('idx')
+        # print(euroc_dataset[i]['idx'])
+        print('filename')
+        print(euroc_dataset[i]['filename'])
+    # print(euroc_dataset[0]['rgb'])
+    # print(euroc_dataset[0]['rgb_context'])
+    # print(euroc_dataset[0]['intrinsics'].shape)
+    # print(euroc_dataset[0]['intrinsic_type'])
+    # print(euroc_dataset[0]['depth'].shape)
 
     # data_dir = '/data/datasets/pd_pinhole_euroc'
     # pd_dataset = EUROCDataset(root_dir=data_dir, split='{:09}', depth_type='vicon',
