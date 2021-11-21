@@ -25,13 +25,15 @@ model:
 datasets:
     augmentation:
         image_shape: (192, 640)
+        random_hflip: False
+        random_vflip: False
     train:
-        batch_size: 16
+        batch_size: 8
         dataset: ['KITTI']
         path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_zhou_files.txt']
         depth_type: ['velodyne']
-        repeat: [2]
+        repeat: [1]
     validation:
         dataset: ['KITTI']
         path: ['/data/datasets/KITTI_raw']

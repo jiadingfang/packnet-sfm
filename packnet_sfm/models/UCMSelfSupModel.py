@@ -2,7 +2,8 @@
 
 from packnet_sfm.models.UCMSfmModel import UCMSfmModel
 # from packnet_sfm.losses.multiview_photometric_loss import MultiViewPhotometricLoss
-from packnet_sfm.losses.ucm_multiview_photometric_loss import UCMMultiViewPhotometricLoss
+# from packnet_sfm.losses.ucm_multiview_photometric_loss import UCMMultiViewPhotometricLoss
+from packnet_sfm.losses.ucm_multiview_featuremetric_loss import UCMMultiViewFeatureMetricLoss
 from packnet_sfm.models.model_utils import merge_outputs
 from packnet_sfm.geometry.pose import Pose
 
@@ -26,7 +27,7 @@ class UCMSelfSupModel(UCMSfmModel):
         self.counter = 0
         self.I_dict = {}
         # Initializes the photometric loss
-        self._photometric_loss = UCMMultiViewPhotometricLoss(**kwargs)
+        self._photometric_loss = UCMMultiViewFeatureMetricLoss(**kwargs)
 
     @property
     def logs(self):
