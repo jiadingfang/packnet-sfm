@@ -114,7 +114,7 @@ class MultiViewPhotometricLoss(LossBase):
         self.photometric_reduce_op = photometric_reduce_op
         self.featuremetric_reduce_op = featuremetric_reduce_op
         num_layers = 50
-        pretrained_path = "autoencoder.pth"
+        pretrained_path = "/data/datasets/autoencoder.pth"
         self.extractor = build_extractor(num_layers, pretrained_path)
         self.disp_norm = disp_norm
         self.clip_loss = clip_loss

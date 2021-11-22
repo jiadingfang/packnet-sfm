@@ -27,23 +27,48 @@ datasets:
         image_shape: (192, 640)
         random_hflip: False
         random_vflip: False
+    # train:
+    #     batch_size: 16
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_raw']
+    #     split: ['data_splits/eigen_zhou_files.txt']
+    #     depth_type: ['velodyne']
+    #     repeat: [1]
+    # validation:
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_raw']
+    #     split: ['data_splits/eigen_val_files.txt',
+    #             'data_splits/eigen_test_files.txt']
+    #     forward_context: [0, 0]
+    #     back_context: [0, 0]
+    #     depth_type: ['velodyne']
+    # test:
+    #     dataset: ['KITTI']
+    #     path: ['/data/datasets/KITTI_raw']
+    #     split: ['data_splits/eigen_test_files.txt']
+    #     depth_type: ['velodyne']
     train:
-        batch_size: 8
+        batch_size: 1
         dataset: ['KITTI']
-        path: ['/data/datasets/KITTI_raw']
-        split: ['data_splits/eigen_zhou_files.txt']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
-        repeat: [1]
+        repeat: [100]
     validation:
         dataset: ['KITTI']
-        path: ['/data/datasets/KITTI_raw']
-        split: ['data_splits/eigen_val_files.txt',
-                'data_splits/eigen_test_files.txt']
-        forward_context: [0, 0]
-        back_context: [0, 0]
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
     test:
         dataset: ['KITTI']
-        path: ['/data/datasets/KITTI_raw']
-        split: ['data_splits/eigen_test_files.txt']
+        path: ['/data/datasets/KITTI_tiny']
+        split: ['kitti_tiny.txt']
         depth_type: ['velodyne']
+wandb:
+    # dry_run: True                   # False means using wandb logging online, True means no wandb logging
+    dry_run: False
+    entity: fjd
+    project: 'FeatureMetric'
+    dir: '/data/datasets/featuremetric_results'
+gpu:
+    idx: 0

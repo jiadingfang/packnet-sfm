@@ -5,17 +5,17 @@ from tqdm import tqdm
 from packnet_sfm.utils.logging import prepare_dataset_prefix
 
 
-def sample_to_cuda(data, dtype=None):
+def sample_to_cuda(data, gpu_idx=0, dtype=None):
     if isinstance(data, str):
         return data
     elif isinstance(data, dict):
-        return {key: sample_to_cuda(data[key], dtype) for key in data.keys()}
+        return {key: sample_to_cuda(data[key], gpu_idx, dtype) for key in data.keys()}
     elif isinstance(data, list):
-        return [sample_to_cuda(val, dtype) for val in data]
+        return [sample_to_cuda(val, gpu_idx, dtype) for val in data]
     else:
         # only convert floats (e.g., to half), otherwise preserve (e.g, ints)
         dtype = dtype if torch.is_floating_point(data) else None
-        return data.to('cuda', dtype=dtype)
+        return data.to('cuda:{}'.format(gpu_idx), dtype=dtype)
 
 
 class BaseTrainer:

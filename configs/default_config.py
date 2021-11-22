@@ -188,6 +188,11 @@ cfg.wandb.url = ''              # Wandb URL
 cfg.checkpoint.s3_url = ''      # s3 URL
 cfg.save.pretrained = ''        # Pretrained checkpoint
 cfg.prepared = False            # Prepared flag
+########################################################################################################################
+### GPU
+########################################################################################################################
+cfg.gpu = CN()
+cfg.gpu.idx = 0
 
 def get_cfg_defaults():
     return cfg.clone()

@@ -110,7 +110,7 @@ class UCMMultiViewFeatureMetricLoss(LossBase):
         self.photometric_reduce_op = photometric_reduce_op
         self.featuremetric_reduce_op = featuremetric_reduce_op
         num_layers = 50
-        pretrained_path = "autoencoder.pth"
+        pretrained_path = "/data/datasets/autoencoder.pth"
         self.extractor = build_extractor(num_layers, pretrained_path)
         self.disp_norm = disp_norm
         self.clip_loss = clip_loss
@@ -300,7 +300,7 @@ class UCMMultiViewFeatureMetricLoss(LossBase):
         featuremetric_loss = sum([reduce_function(featuremetric_losses[i])
                                 for i in range(self.n)]) / self.n
         # Store and return reduced photometric loss
-        self.add_metric('featuremetric_loss', featuremetric_loss)
+        # self.add_metric('featuremetric_loss', featuremetric_loss)
         return featuremetric_loss
 
 ########################################################################################################################

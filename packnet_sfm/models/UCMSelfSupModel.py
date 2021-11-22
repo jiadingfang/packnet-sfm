@@ -95,10 +95,10 @@ class UCMSelfSupModel(UCMSfmModel):
         self.I_dict = {'fx': I[0].item(), 'fy': I[1].item(), 'cx': I[2].item(), 'cy': I[3].item(), 'alpha': I[4].item()}
         batch_I = output['intrinsics']
 
-        if self.counter % 100 == 0:
-            print()
-            print(I)
-        self.counter += 1
+        # if self.counter % 100 == 0:
+        #     print()
+        #     print(I)
+        # self.counter += 1
 
         if not self.training:
             # If not training, no need for self-supervised loss

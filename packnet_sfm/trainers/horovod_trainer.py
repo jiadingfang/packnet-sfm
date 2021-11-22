@@ -38,7 +38,8 @@ class HorovodTrainer(BaseTrainer):
         print_config(module.config)
 
         # Send module to GPU
-        module = module.to('cuda')
+        # module = module.to('cuda')
+        module = module.to('cuda:{}'.format(int(module.config.gpu.idx)))
         # Configure optimizer and scheduler
         module.configure_optimizers()
 
@@ -81,7 +82,8 @@ class HorovodTrainer(BaseTrainer):
             # Reset optimizer
             optimizer.zero_grad()
             # Send samples to GPU and take a training step
-            batch = sample_to_cuda(batch)
+            # batch = sample_to_cuda(batch)
+            batch = sample_to_cuda(batch, int(module.config.gpu.idx))
             output = module.training_step(batch, i)
             # Backprop through loss and take an optimizer step
             output['loss'].backward()
@@ -111,7 +113,8 @@ class HorovodTrainer(BaseTrainer):
             # For all batches
             for i, batch in progress_bar:
                 # Send batch to GPU and take a validation step
-                batch = sample_to_cuda(batch)
+                # batch = sample_to_cuda(batch)
+                batch = sample_to_cuda(batch, int(module.config.gpu.idx))
                 output = module.validation_step(batch, i, n)
                 # Append output to list of outputs
                 outputs.append(output)
@@ -122,7 +125,8 @@ class HorovodTrainer(BaseTrainer):
 
     def test(self, module):
         # Send module to GPU
-        module = module.to('cuda', dtype=self.dtype)
+        # module = module.to('cuda', dtype=self.dtype)
+        module = module.to('cuda:{}'.format(int(module.config.gpu.idx)), dtype=self.dtype)
         # Get test dataloaders
         test_dataloaders = module.test_dataloader()
         # Run evaluation
@@ -143,7 +147,8 @@ class HorovodTrainer(BaseTrainer):
             # For all batches
             for i, batch in progress_bar:
                 # Send batch to GPU and take a test step
-                batch = sample_to_cuda(batch, self.dtype)
+                # batch = sample_to_cuda(batch, self.dtype)
+                batch = sample_to_cuda(batch, int(module.config.gpu.idx), self.dtype)
                 output = module.test_step(batch, i, n)
                 # Append output to list of outputs
                 outputs.append(output)
