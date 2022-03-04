@@ -116,6 +116,7 @@ cfg.model.depth_net.name = ''               # Depth network name
 cfg.model.depth_net.checkpoint_path = ''    # Depth checkpoint filepath
 cfg.model.depth_net.version = ''            # Depth network version
 cfg.model.depth_net.dropout = 0.0           # Depth network dropout
+cfg.model.depth_net.init_intrinsic = []     # Initialization of the intrinsics
 ########################################################################################################################
 ### MODEL.POSE_NET
 ########################################################################################################################
@@ -132,7 +133,8 @@ cfg.datasets = CN()
 ### DATASETS.AUGMENTATION
 ########################################################################################################################
 cfg.datasets.augmentation = CN()
-cfg.datasets.augmentation.image_shape = (192, 640)              # Image shape
+cfg.datasets.augmentation.center_crop = (720, 960)              # Center Crop Shape of the Raw Input Image
+cfg.datasets.augmentation.image_shape = (192, 640)              # Resized Image shape
 cfg.datasets.augmentation.jittering = (0.2, 0.2, 0.2, 0.05)     # Color jittering values
 cfg.datasets.augmentation.random_hflip = True
 cfg.datasets.augmentation.random_vflip = True

@@ -11,6 +11,11 @@ from packnet_sfm.utils.misc import filter_dict
 
 ########################################################################################################################
 
+def center_crop_image(image, shape):
+    transform = transforms.CenterCrop(shape)
+    return transform(image)
+
+
 def resize_image(image, shape, interpolation=Image.ANTIALIAS):
     """
     Resizes input image.
@@ -238,13 +243,7 @@ def colorjitter_sample(sample, parameters, prob=1.0):
 ########################################################################################################################
 
 def random_hflip_sample(sample, prob=0.5):
-    hflipper = transforms.RandomHorizontalFlip(p=1) # make a determined hflip
-
-    p = torch.rand(1) # make a guess
-    if p < prob:
-        flipper = transforms.Compose([])
-    else:
-        flipper = transforms.Compose([hflipper])
+    flipper = transforms.RandomHorizontalFlip(p=prob)
 
     # Flip single items
     for key in filter_dict(sample, [
@@ -262,13 +261,7 @@ def random_hflip_sample(sample, prob=0.5):
 ########################################################################################################################
 
 def random_vflip_sample(sample, prob=0.5):
-    vflipper = transforms.RandomVerticalFlip(p=1) # make a determined vflip
-
-    p = torch.rand(1) # make a guess
-    if p < prob:
-        flipper = transforms.Compose([])
-    else:
-        flipper = transforms.Compose([vflipper])
+    flipper = transforms.RandomVerticalFlip(p=prob)
 
     # Flip single items
     for key in filter_dict(sample, [
@@ -285,3 +278,18 @@ def random_vflip_sample(sample, prob=0.5):
 
 ########################################################################################################################
 
+def center_crop_sample(sample, crop_shape):
+    cropper = transforms.CenterCrop(size=crop_shape)
+
+    # Crop single items
+    for key in filter_dict(sample, [
+        'rgb'
+    ]):
+        sample[key] = cropper(sample[key])
+    # Crop lists
+    for key in filter_dict(sample, [
+        'rgb_context'
+    ]):
+        sample[key] = [cropper(k) for k in sample[key]]
+    # Return cropped sample
+    return sample

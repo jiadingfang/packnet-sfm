@@ -1,38 +1,44 @@
 This is the repo for reproducing the depth results in our "Self-Supervised Camera Self-Calibration from Video" paper.
 
 ## Install
-The same as the original Packnet-sfm repo.
+The same as the original packnet-sfm repo.
 
 ## Usage
 ### Data
 #### Download
+
 For KITTI data, follow the original packnet-sfm repo. 
 The EUROC data can be downloaded from [here](https://drive.google.com/drive/folders/19HvKiH_hownpK0sXTnlKFa38zf_wWDF5?usp=sharing). It contains the the `cam0` data for euroc sequences. It also contains the Basalt calibrated results for UCM, EUCM, DS camera models.
+
 #### Mount
+
 Please mount the data under `/data/datasets/`. You can add to the Makefile
 ```bash
 -v /your/data/dir/:/data/datasets/
 ```
 The script will then read `/data/datasets/euroc_cam` for example.
+
 ### Training
+
 The repo supports learning UCM, EUCM, DS camera models on datasets KITTI and EUROC.
 ```bash
+# UCM on tss
+make docker-run COMMAND="python3 scripts/train.py configs/ucm_tss.yaml"
 # UCM on KITTI
 make docker-run COMMAND="python3 scripts/train.py configs/ucm_kitti.yaml"
 # UCM on EUROC
 make docker-run COMMAND="python3 scripts/train.py configs/ucm_euroc.yaml"
-# EUCM on KITTI
-make docker-run COMMAND="python3 scripts/train.py configs/eucm_kitti.yaml"
-# EUCM on EUROC
-make docker-run COMMAND="python3 scripts/train.py configs/eucm_euroc.yaml"
-# DS on KITTI
-make docker-run COMMAND="python3 scripts/train.py configs/ds_kitti.yaml"
-# DS on EUROC
-make docker-run COMMAND="python3 scripts/train.py configs/ds_euroc.yaml"
 ```
 #### Intialization
-Currently the intialization is set wildly at $$(sigmoid(-1) * 1000)$$ for {fx, fy, cx, cy}. $$sigmoid(-1)$$ for alpha, $$sigmoid(-1) * 2$$ for beta (only used in EUCM), and $$sigmoid(-1) * 2 - 1$$ for xi (only used in DS). You can change the intialization in `packnet_sfm/networks/layers/resnet/ucm_decoder.py` for UCM (similar for EUCM and DS).
+
+The initialization for the camera model can be set in the config file under `init_intrinsic` field (currently only UCM model is supported). If it's not set, the default value is $(sigmoid(-1) * 1000)$ for ${fx, fy, cx, cy}$ and $sigmoid(-1)$ for alpha.
+
+#### Augmentation
+
+There are 3 augmentations implemented: center_crop, random_hflip (random horizontal flipping), random_vflip (random vertical flipping). For center_crop, specific shape can be set in the config file. For random_hflip and random_hflip, they can be turned on and off in the config file, the default is on.
+
 ### Inference
+
 use `scripts/infer.py` to do the inference with checkpoint.
 ```bash
 # Format

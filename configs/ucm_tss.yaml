@@ -1,0 +1,59 @@
+arch:
+    max_epochs: 100
+model:
+    name: 'UCMSelfSupModel'
+    optimizer:
+        name: 'Adam'
+        depth:
+            lr: 0.0002
+        pose:
+            lr: 0.0002
+    scheduler:
+        name: 'StepLR'
+        step_size: 30
+        gamma: 0.5
+    depth_net:
+        name: 'UCMResNet'
+        version: '18pt'
+        init_intrinsic: [300, 300, 320, 240, 0.5] # The first 4 params are optimized between [0,1000], the last one is [0,1]
+    pose_net:
+        name: 'PoseResNet'
+        version: '18pt'
+    params:
+        crop: 'garg'
+        min_depth: 0.0
+        max_depth: 80.0
+datasets:
+    augmentation:
+        center_crop: (720, 960)
+        # image_shape: (192, 256)
+        image_shape: (480, 640)
+        # image_shape: (960, 1280)
+        jittering: (0.2, 0.2, 0.2, 0.05)
+        random_hflip: True
+        random_vflip: True
+    train:
+        batch_size: 8 #2
+        dataset: ['Image']
+        path: ['/data/datasets/tri_fisheye_01']
+        split: ['{:09}']
+        depth_type: ['']
+        repeat: [50]
+        num_logs: 10
+    validation:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_raw']
+        split: ['data_splits/eigen_val_files.txt',
+                'data_splits/eigen_test_files.txt']
+        forward_context: [0, 0]
+        back_context: [0, 0]
+        depth_type: ['velodyne']
+    test:
+        dataset: ['KITTI']
+        path: ['/data/datasets/KITTI_raw']
+        split: ['data_splits/eigen_test_files.txt']
+        depth_type: ['velodyne']
+wandb:
+    dry_run: True                   # False means using wandb logging online, True means no wandb logging
+    project: 'ucm_test'
+    dir: '/data/datasets/results'

@@ -14,21 +14,18 @@ from .layers import ConvBlock, Conv3x3, upsample
 
 
 class UCMDecoder(nn.Module):
-    def __init__(self, num_ch_enc, scales=[0], num_output_channels=3, use_skips=True):
+    def __init__(self, init_intrinsic, num_ch_enc, scales=[0], num_output_channels=3, use_skips=True):
         super(UCMDecoder, self).__init__()
 
         # camera intrinsic parameter as a vector
-        # i = torch.tensor([235.4/1000, 245.1/1000, 186.5/1000, 132.6/1000, 0.65])
-        # i = torch.tensor([[307.4048/1000, 200.0247/1000, 242.0782/1000, 163.3021/1000, 0.8899], [307.4048/1000, 200.0247/1000, 242.0782/1000, 163.3021/1000, 0.8899]])
-        # i = i * 0.9
-        # i = i * 0.95
-        # i = i * 1.05
-        # i = i * 1.10
-        # sigmoid_inv_i = torch.log(i / (1 - i))
-        # self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
-        # self.intrinsic_vector = nn.Parameter(torch.zeros(5))
-        self.intrinsic_vector = nn.Parameter(-torch.ones(5))
-
+        if len(init_intrinsic) > 0:
+            i = torch.tensor(init_intrinsic)
+            i[:4] = i[:4] / 1000.0
+            sigmoid_inv_i = torch.log(i / (1 - i))
+            self.intrinsic_vector = nn.Parameter(sigmoid_inv_i)
+        else:
+            self.intrinsic_vector = nn.Parameter(-torch.ones(5))
+            
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
 

@@ -1,12 +1,12 @@
 # Copyright 2020 Toyota Research Institute.  All rights reserved.
 
 from functools import partial
-from packnet_sfm.datasets.augmentations import resize_image, resize_sample, \
+from packnet_sfm.datasets.augmentations import resize_image, resize_sample, center_crop_sample, \
     duplicate_sample, colorjitter_sample, to_tensor_sample, random_hflip_sample, random_vflip_sample
 
 ########################################################################################################################
 
-def train_transforms(sample, image_shape, jittering, random_hflip, random_vflip):
+def train_transforms(sample, image_shape, jittering, center_crop, random_hflip, random_vflip):
     """
     Training data augmentation transformations
 
@@ -29,13 +29,20 @@ def train_transforms(sample, image_shape, jittering, random_hflip, random_vflip)
         Augmented sample
     """
 
+    # center_crop = True
+
+    if len(center_crop) > 0:
+        # crop_shape = (480, 640) # for tss, original shape: 960 x 1280
+        center_crop = (720, 960) # for tss, original shape: 960 x 1280
+        sample = center_crop_sample(sample, center_crop) # center crop for euroc dataset
+
     if len(image_shape) > 0:
         sample = resize_sample(sample, image_shape)
+    sample = duplicate_sample(sample)
     if random_hflip:
         sample = random_hflip_sample(sample) # add random hflipper as data augmentation
     if random_vflip:
         sample = random_vflip_sample(sample) # add random vflipper as data augmentation
-    sample = duplicate_sample(sample)
     if len(jittering) > 0:
         sample = colorjitter_sample(sample, jittering)
     sample = to_tensor_sample(sample)
@@ -83,7 +90,7 @@ def test_transforms(sample, image_shape):
     sample = to_tensor_sample(sample)
     return sample
 
-def get_transforms(mode, image_shape, jittering, random_hflip, random_vflip , **kwargs):
+def get_transforms(mode, image_shape, jittering, center_crop, random_hflip, random_vflip , **kwargs):
     """
     Get data augmentation transformations for each split
 
@@ -109,6 +116,7 @@ def get_transforms(mode, image_shape, jittering, random_hflip, random_vflip , **
         return partial(train_transforms,
                        image_shape=image_shape,
                        jittering=jittering,
+                       center_crop=center_crop,
                        random_hflip=random_hflip,
                        random_vflip=random_vflip)
     elif mode == 'validation':

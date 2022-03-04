@@ -31,7 +31,7 @@ class UCMResNet(nn.Module):
         Y (str): If Y == pt, use a pretrained model
     """
 
-    def __init__(self, version=None, **kwargs):
+    def __init__(self, init_intrinsic, version=None, **kwargs):
         super().__init__()
         assert version is not None, "RaySurfaceResNet needs a version"
 
@@ -41,7 +41,7 @@ class UCMResNet(nn.Module):
 
         self.encoder = ResnetEncoder(num_layers=num_layers, pretrained=pretrained)
         self.decoder = DepthDecoder(num_ch_enc=self.encoder.num_ch_enc)
-        self.intrinsic_decoder = UCMDecoder(num_ch_enc=self.encoder.num_ch_enc)
+        self.intrinsic_decoder = UCMDecoder(init_intrinsic=init_intrinsic, num_ch_enc=self.encoder.num_ch_enc)
 
         self.scale_inv_depth = partial(disp_to_depth, min_depth=0.1, max_depth=100.0)
 
