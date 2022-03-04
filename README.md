@@ -8,7 +8,7 @@ The same as the original packnet-sfm repo.
 #### Download
 
 For KITTI data, follow the original packnet-sfm repo. 
-The EUROC data can be downloaded from [here](https://drive.google.com/drive/folders/19HvKiH_hownpK0sXTnlKFa38zf_wWDF5?usp=sharing). It contains the the `cam0` data for euroc sequences. It also contains the Basalt calibrated results for UCM, EUCM, DS camera models.
+The EUROC data can be downloaded from [here](https://www.dropbox.com/sh/112wtkmxapesws5/AADawGf7QaCvlTiL8klpH7Uya?dl=0). It contains the the `cam0` data for euroc sequences. It also contains the Basalt calibrated results for UCM, EUCM, DS camera models.
 
 #### Mount
 
