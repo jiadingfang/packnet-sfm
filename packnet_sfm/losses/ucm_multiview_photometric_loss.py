@@ -333,8 +333,6 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # If using progressive scaling
         self.n = self.progressive_scaling(progress)
 
-        print('self.n: ', self.n)
-
         # Loop over all reference images
         photometric_losses = [[] for _ in range(self.n)] # [[[B,1,H,W], [B,1,H,W], [B,1,H,W], [B,1,H,W]]]
         images = match_scales(image, inv_depths, self.n)
