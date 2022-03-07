@@ -108,6 +108,8 @@ cfg.model.loss.velocity_loss_weight = 0.1       # Velocity supervision loss weig
 cfg.model.loss.supervised_method = 'sparse-l1'  # Method for depth supervision
 cfg.model.loss.supervised_num_scales = 1        # Number of scales for supervised learning
 cfg.model.loss.supervised_loss_weight = 0.9     # Supervised loss weight
+#
+cfg.model.loss.mask = ''                        # Self-occlusion mask
 ########################################################################################################################
 ### MODEL.DEPTH_NET
 ########################################################################################################################

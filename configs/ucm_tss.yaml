@@ -23,6 +23,8 @@ model:
         crop: 'garg'
         min_depth: 0.0
         max_depth: 80.0
+    loss:
+        mask: 'tss_mask.png'
 datasets:
     augmentation:
         center_crop: (720, 960)

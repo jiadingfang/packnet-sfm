@@ -3,13 +3,15 @@
 import torch
 import torch.nn as nn
 
+import numpy as np
+
 from packnet_sfm.utils.image import match_scales
 # from packnet_sfm.geometry.camera import Camera
 from packnet_sfm.geometry.camera_ucm import UCMCamera
 from packnet_sfm.geometry.camera_utils import view_synthesis
 from packnet_sfm.utils.depth import calc_smoothness, inv2depth
 from packnet_sfm.losses.loss_base import LossBase, ProgressiveScaling
-from packnet_sfm.utils.image import image_grid
+from packnet_sfm.utils.image import image_grid, load_image, interpolate_image
 
 ########################################################################################################################
 
@@ -93,7 +95,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
     def __init__(self, num_scales=1, ssim_loss_weight=0.85, occ_reg_weight=0.1, smooth_loss_weight=0.1,
                  C1=1e-4, C2=9e-4, photometric_reduce_op='mean', disp_norm=True, clip_loss=0.5,
                  progressive_scaling=0.0, padding_mode='zeros',
-                 automask_loss=False, **kwargs):
+                 automask_loss=False, mask='', **kwargs):
         super().__init__()
         self.n = num_scales
         self.progressive_scaling = progressive_scaling
@@ -107,6 +109,11 @@ class UCMMultiViewPhotometricLoss(LossBase):
         self.clip_loss = clip_loss
         self.padding_mode = padding_mode
         self.automask_loss = automask_loss
+        if len(mask) > 0:
+            self.mask = torch.tensor(np.array(load_image(mask))[:,:,0]/255.0).unsqueeze(0).unsqueeze(0) # load self-occlusion mask as shape [1,1,H,W]
+        else:
+            self.mask = None
+
         self.progressive_scaling = ProgressiveScaling(
             progressive_scaling, self.n)
 
@@ -214,6 +221,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
                                 for i in range(self.n)]
         else:
             photometric_loss = l1_loss
+
         # Clip loss
         if self.clip_loss > 0.0:
             for i in range(self.n):
@@ -223,13 +231,13 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # Return total photometric loss
         return photometric_loss
 
-    def reduce_photometric_loss(self, photometric_losses):
+    def reduce_photometric_loss(self, photometric_losses, mask=None):
         """
         Combine the photometric loss from all context images
 
         Parameters
         ----------
-        photometric_losses : list of torch.Tensor [B,3,H,W]
+        photometric_losses : list of torch.Tensor [B,1,H,W]
             Pixel-wise photometric losses from the entire context
 
         Returns
@@ -237,6 +245,12 @@ class UCMMultiViewPhotometricLoss(LossBase):
         photometric_loss : torch.Tensor [1]
             Reduced photometric loss
         """
+
+        # Apply self occlusion mask
+        if mask is not None:
+            mask = mask.to(photometric_losses[0][0].device)
+            photometric_losses[0] = [photometric_loss * interpolate_image(mask, photometric_loss.shape) for photometric_loss in photometric_losses[0]]
+
         # Reduce function
         def reduce_function(losses):
             if self.photometric_reduce_op == 'mean':
@@ -288,7 +302,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
 ########################################################################################################################
 
     def forward(self, image, context, inv_depths,
-                I, ref_I, poses, return_logs=False, progress=0.0):
+                I, ref_I, poses, return_logs=False, progress=0.0, mask=None):
         """
         Calculates training photometric loss.
 
@@ -319,6 +333,8 @@ class UCMMultiViewPhotometricLoss(LossBase):
         # If using progressive scaling
         self.n = self.progressive_scaling(progress)
 
+        print('self.n: ', self.n)
+
         # Loop over all reference images
         photometric_losses = [[] for _ in range(self.n)] # [[[B,1,H,W], [B,1,H,W], [B,1,H,W], [B,1,H,W]]]
         images = match_scales(image, inv_depths, self.n)
@@ -339,7 +355,7 @@ class UCMMultiViewPhotometricLoss(LossBase):
                     photometric_losses[i].append(unwarped_image_loss[i])
 
         # Calculate reduced photometric loss
-        loss = self.reduce_photometric_loss(photometric_losses)
+        loss = self.reduce_photometric_loss(photometric_losses, self.mask)
 
         # Include smoothness loss if requested
         if self.smooth_loss_weight > 0.0:
